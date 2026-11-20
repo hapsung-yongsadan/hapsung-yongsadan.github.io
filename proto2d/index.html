@@ -57,6 +57,9 @@
   .sk i{position:absolute;inset:0;background:rgba(0,0,0,.6);transform-origin:bottom;transition:none}
   .sk span{position:absolute;bottom:0;left:0;right:0;text-align:center;font-family:Jua;font-size:2.6cqw;text-shadow:0 1px 0 #000;background:linear-gradient(0deg,rgba(0,0,0,.7),transparent);padding-top:2cqw}
   #stage{container-type:size}
+  .modes{position:absolute;left:50%;transform:translateX(-50%);top:15.5%;z-index:7;display:flex;gap:1.6cqw}
+  .modes button{font-family:Jua;font-size:3.2cqw;color:#e9dcc0;background:rgba(22,16,12,.85);border:1.5px solid rgba(242,200,106,.35);border-radius:10px;padding:1.4cqw 2.4cqw;text-align:left}
+  .modes button.on{color:#fff;background:linear-gradient(180deg,#7a5420,#3e2a12);border-color:#f2c86a;box-shadow:0 0 10px rgba(242,200,106,.4)}
   #load{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#120c08;font-family:Jua;font-size:6cqw;color:var(--gold);transition:opacity .4s}
 </style>
 </head>
@@ -79,6 +82,9 @@
   <div class="skills">
     <div class="sk" id="sk1" style="background-image:url(img/h09.png)"><i></i><span>화염폭풍</span></div>
     <div class="sk" id="sk2" style="background-image:url(img/h17.png)"><i></i><span>치유의빛</span></div>
+  </div>
+  <div class="modes" id="modes">
+    <button data-m="A">A 돌진</button><button data-m="B" class="on">B 제자리</button><button data-m="C">C 맞붙기</button>
   </div>
   <div id="boss"><div class="b1">초원의 왕 등장!</div><div class="b2">녹색 고블린 왕이 나타났습니다</div></div>
   <div class="tabs">
@@ -178,13 +184,26 @@ function die(m){
 function updProg(){ const p = bossOn ? 1 : kills / KILLS_FOR_BOSS; document.getElementById('prog').style.width = (p*100)+'%';
   document.getElementById('psub').textContent = bossOn ? '보스 전투 중!' : '보스까지 ' + kills + ' / ' + KILLS_FOR_BOSS; }
 
+// ---------- 공격 방식 (A 돌진 / B 제자리 / C 맞붙기) ----------
+let MODE = 'B';
+document.querySelectorAll('#modes button').forEach(b => b.onclick = () => {
+  MODE = b.dataset.m; document.querySelectorAll('#modes button').forEach(x => x.classList.toggle('on', x === b));
+  for (const h of heroes){ h.act = null; h.x = h.hx; h.y = h.hy; h.walk = 0; }
+});
+
 // ---------- 영웅 행동 ----------
 function heroAct(h){
   const m = nearest(h); if (!m) return;
   h.face = m.x >= h.hx ? 1 : -1;
   const crit = Math.random() < 0.22;
   const v = rnd(h.dmg[0], h.dmg[1]) * (crit ? 2.2 : 1);
-  if (h.role === 0){
+  if (h.role === 0 && MODE === 'B'){
+    // 제자리: 그 자리에서 톡 튀며 검기를 날림
+    h.act = { type:'wave', t:0, m, crit, v, fired:false, dur:0.42 };
+  } else if (h.role === 0 && MODE === 'C'){
+    // 맞붙기: 붙어 있는 적을 짧게 툭 베기
+    h.act = { type:'bump', t:0, m, crit, v, done:false, dur:0.34 };
+  } else if (h.role === 0){
     // 근접: 뒤로 힘 모으기 → 돌진 → 베기 → 복귀
     h.act = { type:'melee', t:0, m, crit, v, done:false, dur:0.62,
       tx: m.x - 95, ty: m.y + 4 };
@@ -198,7 +217,17 @@ function heroAct(h){
 }
 function updateHero(h, dt){
   h.phase += dt * 3;
-  if (!h.act){ h.t -= dt; if (h.t <= 0){ h.t = h.cd * rnd(0.85,1.15); heroAct(h); } return; }
+  if (!h.act){
+    if (MODE === 'C' && h.role === 0){
+      // 가장 가까운 적 옆으로 걸어감 (도착하면 공격)
+      const m = nearest(h);
+      const gx = m ? m.x - 92 : h.hx, gy = m ? m.y + 2 : h.hy;
+      const dx = gx - h.x, dy = gy - h.y, d = Math.hypot(dx, dy);
+      if (d > 10){ const sp = 300 * dt; h.x += dx / d * Math.min(sp, d); h.y += dy / d * Math.min(sp, d); h.walk = (h.walk||0) + dt * 14; h.moving = true; return; }
+      h.moving = false;
+      if (!m) return;
+    }
+    h.t -= dt; if (h.t <= 0){ h.t = h.cd * rnd(0.85,1.15); heroAct(h); } return; }
   const a = h.act; a.t += dt;
   const k = a.t / a.dur;
   if (a.type === 'melee'){
@@ -211,6 +240,14 @@ function updateHero(h, dt){
           shake = Math.max(shake, a.crit ? 14 : 6); hitStop = Math.max(hitStop, a.crit ? 0.07 : 0.035);
           hit(mm, a.v, a.crit); } } }
     else { const u = ease.out((k-0.6)/0.4); h.x = a.tx + (h.hx-a.tx)*u; h.y = a.ty + (h.hy-a.ty)*u - Math.sin(u*Math.PI)*24; }
+  } else if (a.type === 'wave'){
+    if (!a.fired && k > 0.3){ a.fired = true; const m = a.m.dead ? nearest(h) : a.m; if (m){
+      addFx({type:'wave', x:h.x+50, y:h.y-h.h*0.5, tx:m.x, ty:m.y-m.h*0.5, life:0.24, m, crit:a.crit, v:a.v}); } }
+  } else if (a.type === 'bump'){
+    if (!a.done && k > 0.35){ a.done = true; const mm = a.m.dead ? nearest(h) : a.m;
+      if (mm){ addFx({type:'img', k:'slash', x:mm.x-10, y:mm.y-mm.h*0.55, rot: rnd(-0.6,0.2), s0:0.5, s1:0.95, life:.26, add:true});
+        addFx({type:'img', k:'shock', x:mm.x, y:mm.y-mm.h*0.45, s0:0.12, s1:0.5, life:.26, add:true});
+        shake = Math.max(shake, a.crit ? 12 : 4); hitStop = Math.max(hitStop, a.crit ? 0.06 : 0.03); hit(mm, a.v, a.crit); } }
   } else if (a.type === 'shoot'){
     if (!a.fired && k > 0.45){ a.fired = true; const m = a.m.dead ? nearest(h) : a.m; if (m){
       addFx({type:'arrow', x:h.hx+60, y:h.hy-h.h*0.55, tx:m.x, ty:m.y-m.h*0.5, life:0.22, m, crit:a.crit, v:a.v}); } }
@@ -224,7 +261,7 @@ function updateHero(h, dt){
         dmgNum(o.hx, o.hy - o.h*1.02, Math.round(rnd(180,260)), false, true); }
       addFx({type:'img', k:'ring', x:h.hx, y:h.hy-4, s0:0.3, s1:1.1, life:.7, add:true, flat:true, amax:0.7}); }
   }
-  if (a.t >= a.dur){ h.act = null; h.x = h.hx; h.y = h.hy; }
+  if (a.t >= a.dur){ h.act = null; if (!(MODE === 'C' && h.role === 0)){ h.x = h.hx; h.y = h.hy; } }
 }
 
 function updateMob(m, dt){
@@ -266,15 +303,22 @@ function drawHero(h){
   const idle = !h.act;
   const br = Math.sin(h.phase) * 0.018;
   let sx = 1 - br*0.6, sy = 1 + br, rot = 0;
+  let hop = 0;
+  if (h.moving){ hop = Math.abs(Math.sin(h.walk)) * 14; sx = 1 + 0.03*Math.sin(h.walk*2); sy = 1 - 0.03*Math.sin(h.walk*2); }
   if (h.act){ const a = h.act, k = a.t/a.dur;
+    if (a.type==='wave'){ const r = Math.sin(Math.min(1, k/0.6) * Math.PI); sy = 1 + 0.07*r; sx = 1 - 0.03*r; hop = 16*r; }
+
     if (a.type==='melee'){ if (k<0.18){ sx=1.08; sy=0.92; rot=-0.12; } else if (k<0.42){ sx=0.9; sy=1.1; rot=0.12; } else if (k<0.6){ sx=1.12; sy=0.9; rot=0.22; } }
     if (a.type==='shoot'){ const r = k<0.45 ? k/0.45 : 1-(k-0.45)/0.55; sx = 1-0.06*r; sy = 1+0.04*r; rot = -0.08*r; if (k>0.45 && k<0.6){ sx=1.08; sy=0.94; } }
     if (a.type==='cast'){ const r = Math.sin(k*Math.PI); sy = 1+0.08*r; sx = 1-0.04*r; }
     if (a.type==='heal'){ const r = Math.sin(k*Math.PI); sy = 1+0.06*r; }
   }
   shadow(h.x, h.y, 70, 1);
-  const lift = h.act && h.act.type==='cast' ? Math.sin(h.act.t/h.act.dur*Math.PI)*18 : 0;
-  drawImgFoot(h.k, h.x, h.y - lift, h.h, {sx, sy, rot: rot * h.face});
+  const lift = (h.act && h.act.type==='cast' ? Math.sin(h.act.t/h.act.dur*Math.PI)*18 : 0) + hop;
+  let px = h.x;
+  if (h.act && h.act.type==='bump'){ const k = h.act.t/h.act.dur; px += (k < 0.35 ? -8*(k/0.35) : k < 0.55 ? 22 : 22*(1-(k-0.55)/0.45)); }
+  if (MODE !== 'A') rot = 0;
+  drawImgFoot(h.k, px, h.y - lift, h.h, {sx, sy, rot: rot * h.face});
 }
 function drawMob(m){
   const dying = m.dead > 0, d = dying ? Math.min(1, m.dead/0.4) : 0;
@@ -294,6 +338,10 @@ function roundRect(x,y,w,h,r){ cx.beginPath(); cx.moveTo(x+r,y); cx.arcTo(x+w,y,
 function drawFx(dt){
   for (let i=fx.length-1;i>=0;i--){ const f = fx[i]; f.t += dt; const k = f.t / f.life;
     if (k >= 1){ fx.splice(i,1);
+      if (f.type==='wave' && f.m && !f.m.dead){ const m = f.m;
+        addFx({type:'img', k:'slash', x:m.x-6, y:m.y-m.h*0.55, rot: rnd(-0.5,0.2), s0:0.5, s1:0.95, life:.24, add:true});
+        addFx({type:'img', k:'shock', x:m.x, y:m.y-m.h*0.45, s0:0.12, s1:0.5, life:.26, add:true});
+        shake = Math.max(shake, f.crit ? 12 : 4); hitStop = Math.max(hitStop, f.crit ? 0.06 : 0.025); hit(m, f.v, f.crit); }
       if ((f.type==='arrow' || f.type==='fireball') && f.m){
         const m = f.m.dead ? null : f.m;
         if (f.type==='fireball'){ addFx({type:'img', k:'boom', x:f.tx, y:f.ty, s0:0.35, s1:1.0, life:.4, add:true}); shake = Math.max(shake, 10);
@@ -317,6 +365,11 @@ function drawFx(dt){
       f.x += f.vx*dt; f.y += f.vy*dt; f.vy += 900*dt; f.vx *= 0.96;
       cx.globalCompositeOperation='lighter'; cx.globalAlpha = 1-k; cx.fillStyle = f.col;
       cx.beginPath(); cx.arc(f.x, f.y, f.size*(1-k*0.6)/2, 0, Math.PI*2); cx.fill();
+    } else if (f.type==='wave'){
+      const u = ease.out(k), x = f.x + (f.tx-f.x)*u, y = f.y + (f.ty-f.y)*u;
+      const im = IMG.slash; cx.translate(x, y); cx.rotate(Math.atan2(f.ty-f.y, f.tx-f.x) + Math.PI*0.5);
+      cx.globalCompositeOperation='lighter'; cx.globalAlpha = 0.95;
+      if (im){ const w = 170; cx.drawImage(im, -w/2, -w/2, w, w); }
     } else if (f.type==='arrow'){
       const u = ease.inOut(k), x = f.x + (f.tx-f.x)*u, y = f.y + (f.ty-f.y)*u - Math.sin(u*Math.PI)*60;
       const ang = Math.atan2((f.ty-f.y) - Math.cos(u*Math.PI)*60*Math.PI/ (1), f.tx-f.x);
