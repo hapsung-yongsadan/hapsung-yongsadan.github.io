@@ -31,6 +31,29 @@
   @keyframes bn{0%{opacity:0;transform:scale(2.2)}12%{opacity:1;transform:scale(.95)}20%{transform:scale(1)}80%{opacity:1}100%{opacity:0}}
   .back{position:absolute;left:3%;top:9%;z-index:7;font-family:Jua;font-size:3cqw;color:#e9dcc0;background:rgba(22,16,12,.85);border:1.5px solid rgba(242,200,106,.35);border-radius:10px;padding:1cqw 2.4cqw;text-decoration:none}
   .test{position:absolute;right:3%;top:9%;z-index:7;font-family:Jua;font-size:3cqw;color:#bfe6ff;background:rgba(12,22,36,.85);border:1.5px solid rgba(159,212,255,.5);border-radius:10px;padding:1cqw 2.4cqw}
+  .tabs{position:absolute;left:7.8%;top:61.2cqh;height:3.4cqh;display:flex;gap:1.1cqw;z-index:7}
+  .tabs button{width:15.6cqw;font-family:Jua;font-size:3.5cqw;color:#d8c39a;background:#2a1c10;border:1.5px solid rgba(242,200,106,.3);border-radius:10px 10px 0 0;position:relative}
+  .tabs button.on{color:#fff;background:linear-gradient(180deg,#7a5420,#4a3010);border-color:#f2c86a}
+  .tabs button i{position:absolute;top:-1cqw;right:-1cqw;width:2.8cqw;height:2.8cqw;border-radius:50%;background:#ff4d4d;box-shadow:0 0 6px #ff4d4d;display:none}
+  .tabs button i.on{display:block}
+  .pane{position:absolute;left:0;right:0;top:64.6cqh;height:26.6cqh;overflow-y:auto;background:linear-gradient(180deg,#2e1f12,#1e140b);z-index:6;display:none;padding:1.5cqw 4cqw 3cqw;touch-action:pan-y}
+  .pane.on{display:block}
+  .pane .hd{font-family:Jua;font-size:3.2cqw;color:#d8c39a;margin:.5cqw 0 1.5cqw}
+  .row{display:flex;align-items:center;gap:2.4cqw;background:rgba(0,0,0,.28);border:1.5px solid rgba(242,200,106,.2);border-radius:12px;padding:1.4cqw 2cqw;margin-bottom:1.6cqw}
+  .row.eq{border-color:#f2c86a;background:rgba(122,84,32,.35)}
+  .row .pic{width:13cqw;height:13cqw;object-fit:contain;flex:none}
+  .row .pic.no{filter:brightness(0) opacity(.45)}
+  .row .tx{flex:1;min-width:0;font-family:Jua;font-size:3.6cqw;line-height:1.25}
+  .row .tx small{display:block;font-family:'Noto Sans KR';font-weight:700;font-size:2.6cqw;color:#e8d8b0}
+  .row .st{color:#ffd040;font-size:3cqw}
+  .bar{height:1.6cqw;background:rgba(0,0,0,.5);border-radius:9px;margin-top:.8cqw;overflow:hidden}
+  .bar b{display:block;height:100%;background:linear-gradient(90deg,#c78bff,#7a3ad0)}
+  .row button{flex:none;font-family:Jua;font-size:3.2cqw;color:#fff;border-radius:10px;padding:1.6cqw 2.6cqw;border:1.5px solid #f2c86a;background:linear-gradient(180deg,#8a5d22,#4a2f10);white-space:nowrap}
+  .row button.blue{background:linear-gradient(180deg,#2e6a9a,#173a5a);border-color:#9fd4ff}
+  .row button:disabled{filter:grayscale(1) brightness(.6)}
+  .need{display:flex;align-items:center;gap:1cqw;margin-top:.6cqw;font-family:'Noto Sans KR';font-weight:700;font-size:2.6cqw;color:#e8d8b0}
+  .need img{width:6.5cqw;height:6.5cqw}
+  .need .ok{color:#9dff9a}.need .ng{color:#ff8a7a}
   #load{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#120c08;font-family:Jua;font-size:6cqw;color:#f2c86a;transition:opacity .4s}
 </style>
 </head>
@@ -45,6 +68,9 @@
   <button class="test" id="bTest">시험용: 10단계 돌 받기</button>
   <div id="banner">진화!<small></small></div>
   <div id="toast"></div>
+  <div class="tabs" id="tabs"><button class="on" data-t="0">가방</button><button data-t="1">영웅<i id="dotH"></i></button><button data-t="2">제작<i id="dotC"></i></button></div>
+  <div class="pane" id="paneH"></div>
+  <div class="pane" id="paneC"></div>
   <div class="btns">
     <button id="bSum">돌 뽑기<small id="cSum">💰 20</small></button>
     <button id="bAuto" class="blue">자동 합성<small>같은 것 합치기</small></button>
@@ -55,12 +81,12 @@
 <script>
 (() => {
 const W = 720, H = 1280;
-const cv = document.getElementById('cv'), cx = cv.getContext('2d'), stage = document.getElementById('stage');
+const cv = document.getElementById('cv'), stage = document.getElementById('stage'); let cx = cv.getContext('2d');
 function fit(){ const r = stage.getBoundingClientRect(), d = Math.min(2, devicePixelRatio||1); cv.width = Math.round(r.width*d); cv.height = Math.round(r.height*d); }
 addEventListener('resize', fit); fit();
 
 const SRC = { g:'g00', h0:'h00', h1:'h03', h2:'h09', h3:'h12', h4:'h17', m0:'a00_m0', m1:'a00_m1', m2:'a00_m2', m3:'a00_m3', boss:'boss00',
-  shock:'shock', boom:'explosion', coin:'i_gold', star:'star', ring:'circle_gold', arc:'circle_arcane', slash:'slash', bolt:'lightning' };
+  shock:'shock', boom:'explosion', coin:'i_gold', star:'star', ring:'circle_gold', arc:'circle_arcane', slash:'slash', bolt:'lightning', gift:'i_gift' };
 const IMG = {}, BOX = {};
 const load = () => Promise.all(Object.entries(SRC).map(([k,f]) => new Promise(r => { const im = new Image(); im.onload = () => { IMG[k]=im; BOX[k]=bbox(im); r(); }; im.onerror = r; im.src = '../proto2d/img/'+f+'.png'; })));
 function bbox(im){ const c = document.createElement('canvas'), s = 128/Math.max(im.width,im.height); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
@@ -87,7 +113,18 @@ const BRANCH = ['orb','sword','arrow','egg'];
 const HUE = [28, 200, 52, 280, 130, 0, 185, 310, 45, 330];
 const hue = lv => HUE[(lv-1)%10];
 // 영웅 위치 (전장 왼쪽)
-const POS = { stone:{x:170,y:640}, orb:{x:85,y:520}, sword:{x:285,y:560}, arrow:{x:80,y:740}, egg:{x:280,y:745} };
+// 장착한 영웅이 서는 자리 3곳 / 영웅 없이 물건만 떠서 공격하는 자리
+const EQ_POS = [ {x:175,y:665}, {x:85,y:545}, {x:295,y:580} ];
+const FLOAT_POS = { stone:{x:250,y:430}, orb:{x:60,y:410}, sword:{x:330,y:470}, arrow:{x:140,y:380}, egg:{x:40,y:720} };
+// 영웅 보유 정보 (have, star, pieces) · 장착 목록
+const own = {}; for (const t in TYPES) own[t] = { have:false, star:0, pieces:0 };
+own.stone.have = true; own.stone.star = 1;
+let equipped = ['stone'];
+const MAX_EQ = 3, MAX_STAR = 5;
+const bonus = t => equipped.includes(t) ? 1.5 + 0.4*(own[t].star-1) : 1;
+const piecesNeed = t => own[t].have ? 10 * own[t].star : 10;
+// 제작법: 해당 물건 n단계 이상 1개 + 골드
+const RECIPE = { stone:{lv:7, gold:300}, orb:{lv:3, gold:800}, sword:{lv:3, gold:800}, arrow:{lv:3, gold:800}, egg:{lv:3, gold:800} };
 
 // ---------- 물건 그리기 ----------
 function glow(x, y, r, col, a){ cx.save(); cx.globalCompositeOperation='lighter'; const g = cx.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,col); g.addColorStop(1,'rgba(0,0,0,0)'); cx.globalAlpha = a; cx.fillStyle = g; cx.beginPath(); cx.arc(x,y,r,0,Math.PI*2); cx.fill(); cx.restore(); }
@@ -150,7 +187,16 @@ const KB = 15;
 const AREA = ['초록 들판','이끼 숲','안개 늪','바람 언덕','붉은 화산'];
 const mobs = [], shots = [], fx = [], nums = [], coins = [];
 const heroes = {}; // 종류별 영웅 (가진 물건이 있으면 등장)
-for (const t in TYPES) heroes[t] = { t, k:TYPES[t].hero, x:POS[t].x, y:POS[t].y, h: t==='stone' ? 220 : 190, timer:rnd(0,0.5), kick:0, on: t==='stone', appear: t==='stone' ? 1 : 0 };
+for (const t in TYPES) heroes[t] = { t, k:TYPES[t].hero, x:FLOAT_POS[t].x, y:FLOAT_POS[t].y, h:80, timer:rnd(0,0.5), kick:0, mode:'none', appear:0 };
+// 매 프레임: 장착 여부에 따라 영웅으로 설지, 물건만 떠 있을지 정함
+function placeActors(dt){
+  for (const t in heroes){ const a = heroes[t], i = equipped.indexOf(t);
+    const mode = i >= 0 ? 'hero' : (bestOf(t) || t === 'stone') ? 'float' : 'none';
+    if (mode !== a.mode){ a.mode = mode; a.appear = 0; if (mode === 'hero'){ burst(EQ_POS[i].x, EQ_POS[i].y - 90, 16, '#fff1b0'); } }
+    if (mode === 'hero'){ a.x = EQ_POS[i].x; a.y = EQ_POS[i].y; a.h = 200; }
+    else { a.x = FLOAT_POS[t].x; a.y = FLOAT_POS[t].y + Math.sin(time*2.2 + a.x)*10; a.h = 80; }
+    a.appear = Math.min(1, a.appear + dt*2.5); }
+}
 let heroHp = 1500, heroMax = 1500, hurt = 0;
 
 // ---------- 합성 칸 (4 x 3) ----------
@@ -196,7 +242,9 @@ function die(m){
   burst(m.x, m.y-m.h*0.45, m.boss?30:10, m.boss?'#ffcf5a':'#c8ff9a');
   const n = m.boss ? 12 : 2, val = Math.round((m.boss ? 60 : 4) * Math.pow(1.3, stageNo-1));
   for (let i=0;i<n;i++) coins.push({x:m.x+rnd(-20,20), y:m.y-m.h*0.4, vx:rnd(-240,240), vy:rnd(-600,-380), land:m.y+rnd(-10,20), phase:0, t:0, val});
-  if (m.boss){ shake = 30; hitStop = 0.12; bossOn = false; kills = 0; stageNo++; toast('스테이지 클리어!'); heroHp = heroMax; }
+  if (m.boss){ shake = 30; hitStop = 0.12; bossOn = false; kills = 0; stageNo++; heroHp = heroMax;
+    const t = Object.keys(TYPES)[Math.floor(Math.random()*5)], n = 3 + Math.floor(Math.random()*3); givePieces(t, n, '보스 보상');
+    for (let i=0;i<n;i++) pieceFx.push({ t, x:m.x+rnd(-30,30), y:m.y-m.h*0.5, vx:rnd(-200,200), vy:rnd(-500,-300), k:0, delay:i*0.08 }); }
   else if (!bossOn) kills++;
   updTop();
 }
@@ -210,7 +258,7 @@ function attack(hr){
   const t = hr.t, lv = bestOf(t) || 1; const m = nearest(hr.x); if (!m) return false;
   hr.kick = 1;
   const sx = hr.x + 50, sy = hr.y - hr.h*0.55, col = `hsl(${hue(lv)},100%,70%)`;
-  const crit = () => Math.random() < 0.18, dmg = c => dmgOf(t, lv) * (c ? 2.3 : 1) * rnd(0.9,1.1);
+  const crit = () => Math.random() < 0.18, dmg = c => dmgOf(t, lv) * bonus(t) * (c ? 2.3 : 1) * rnd(0.9,1.1);
   if (t === 'stone'){ const c = crit(); shots.push({ kind:'stone', x:sx, y:sy, ox:sx, oy:sy, m, lv, c, v:dmg(c), t:0, life:0.32, rot:0 }); }
   else if (t === 'orb'){ const c = crit(); addFx({type:'img', k:'arc', x:hr.x, y:hr.y-4, s0:0.15, s1:0.6, life:.5, add:true, flat:true, spin:2.4, amax:.7});
     shots.push({ kind:'orb', x:sx, y:sy-20, ox:sx, oy:sy-20, m, lv, c, v:dmg(c), t:-0.2, life:0.45, r:130+lv*8, col }); }
@@ -264,8 +312,8 @@ function merge(a, b){ // a를 b 위로
     grid[b] = { t:nt, lv:1 }; pop[b] = { t:0, kind:'evolve' };
     addFx({type:'img', k:'ring', x:p.x, y:p.y, s0:0.2, s1:1.4, life:.8, add:true}); addFx({type:'img', k:'star', x:p.x, y:p.y, s0:0.3, s1:1.2, life:.7, add:true});
     burst(p.x, p.y, 30, `hsl(${hue(1)},100%,70%)`); shake = 18; hitStop = 0.1;
-    const fresh = !heroes[nt].on; heroes[nt].on = true;
-    banner(TYPES[nt].name + ' 탄생!', fresh ? TYPES[nt].who + '가 전투에 합류했어요' : '같은 ' + TYPES[nt].name + '끼리 합쳐서 키워보세요');
+    banner(TYPES[nt].name + ' 탄생!', own[nt].have ? '같은 ' + TYPES[nt].name + '끼리 합쳐서 키워보세요' : TYPES[nt].name + ' ' + RECIPE[nt].lv + '단계로 ' + TYPES[nt].who + ' 제작 가능!');
+    updPanels();
   } else {
     grid[b] = { t:B.t, lv:B.lv+1 }; pop[b] = { t:0, kind:'merge' };
     burst(p.x, p.y, 14, `hsl(${hue(B.lv+1)},100%,70%)`); shake = Math.max(shake, 5);
@@ -289,7 +337,9 @@ function updBtns(){ document.getElementById('cSum').textContent = '💰 ' + sumC
 
 function lp(e){ const r = cv.getBoundingClientRect(); return { x:(e.clientX - r.left) / r.width * W, y:(e.clientY - r.top) / r.height * H }; }
 function slotAt(p){ const c = Math.floor((p.x - GX)/CW), r = Math.floor((p.y - GY)/CH); if (c<0||c>=COLS||r<0||r>=ROWS) return -1; return r*COLS + c; }
-cv.addEventListener('pointerdown', e => { const p = lp(e), i = slotAt(p); if (i >= 0 && grid[i]){ drag = { i, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); } });
+cv.addEventListener('pointerdown', e => { const p = lp(e), i = slotAt(p);
+  if (chest && Math.hypot(p.x - chest.x, p.y - (chest.y - 50)) < 90){ openChest(); return; }
+  if (i >= 0 && grid[i]){ drag = { i, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); } });
 cv.addEventListener('pointermove', e => { if (drag){ const p = lp(e); drag.x = p.x; drag.y = p.y; } });
 cv.addEventListener('pointerup', e => { if (!drag) return; const j = slotAt(lp(e)), i = drag.i; drag = null;
   if (j < 0 || j === i) return;
@@ -316,9 +366,8 @@ function drawGround(){
 function drawPanel(){
   const g = cx.createLinearGradient(0,770,0,H); g.addColorStop(0,'#3a2716'); g.addColorStop(1,'#1a110a'); cx.fillStyle = g; cx.fillRect(0,770,W,H-770);
   cx.fillStyle = '#f2c86a'; cx.fillRect(0,770,W,4); cx.fillStyle='rgba(0,0,0,.35)'; cx.fillRect(0,774,W,8);
-  cx.font = '400 28px Jua'; cx.textAlign='left'; cx.fillStyle = '#f2dca8'; cx.fillText('합성 가방', 64, 815);
-  cx.textAlign='right'; cx.font = '400 22px Jua'; cx.fillStyle='#d8c39a';
-  const sl = bestOf('stone'); cx.fillText(sl >= MAXLV ? '10단계 돌 두 개 → 랜덤 진화!' : '돌을 10단계까지 키우면 진화해요 (지금 ' + sl + '단계)', W-64, 815);
+  cx.textAlign='right'; cx.font = '400 19px Jua'; cx.fillStyle='#d8c39a';
+  const sl = bestOf('stone'); cx.fillText(sl >= MAXLV ? '10단계 돌 2개 → 진화!' : '돌 ' + sl + ' / 10단계', W-40, 812);
   for (let i=0;i<grid.length;i++){ const p = slotPos(i), x = p.x - CW/2 + 6, y = p.y - CH/2 + 6, w = CW-12, h = CH-12, it = grid[i];
     cx.fillStyle = 'rgba(0,0,0,.4)'; rr(x,y+4,w,h,16); cx.fill();
     const eq = it && grid.findIndex(o => o && o.t === it.t && o.lv === bestOf(it.t)) === i;
@@ -339,12 +388,41 @@ function drawPanel(){
     const j = slotAt(drag); if (j >= 0 && j !== drag.i && canMerge(it, grid[j])){ const p = slotPos(j); cx.strokeStyle='#9dff9a'; cx.lineWidth=4; rr(p.x-CW/2+6,p.y-CH/2+6,CW-12,CH-12,16); cx.stroke(); } }
 }
 function drawHero(hr, dt){
-  hr.kick = Math.max(0, hr.kick - dt*6); hr.appear = hr.on ? Math.min(1, hr.appear + dt*2.5) : 0; if (hr.appear <= 0) return;
-  const br = Math.sin(time*3 + hr.x)*0.018, k = hr.kick, a = ease.back(hr.appear);
+  hr.kick = Math.max(0, hr.kick - dt*6); if (hr.mode === 'none') return;
+  const k = hr.kick, a = ease.back(hr.appear), lv = bestOf(hr.t) || 1;
+  if (hr.mode === 'float'){ // 영웅 없이 물건이 떠서 공격
+    shadow(hr.x, hr.y + 40, 26, 0.6*hr.appear);
+    drawItem(hr.t, lv, hr.x - 10*k, hr.y, 26*a, Math.sin(time*2)*0.2, 0.92);
+    return; }
+  const br = Math.sin(time*3 + hr.x)*0.018;
   shadow(hr.x, hr.y, 66, hr.appear);
   drawImgFoot(hr.k, hr.x - 8*k, hr.y - 8*k, hr.h * a, { sx: 1 - br*0.6 + 0.05*k, sy: 1 + br - 0.04*k, flash: Math.max(hurt*0.6, hr.appear < 1 ? 1-hr.appear : 0) });
-  const lv = bestOf(hr.t); if (lv){ drawItem(hr.t, lv, hr.x + 46, hr.y - hr.h*0.95, 18, 0); }
+  if (bestOf(hr.t)) drawItem(hr.t, lv, hr.x + 46, hr.y - hr.h*0.95, 18, 0);
+  // 별
+  cx.save(); cx.font = '400 20px Jua'; cx.textAlign='center'; cx.lineWidth=5; cx.strokeStyle='#000'; cx.lineJoin='round';
+  const st = '★'.repeat(own[hr.t].star); cx.strokeText(st, hr.x, hr.y + 26); cx.fillStyle = '#ffd040'; cx.fillText(st, hr.x, hr.y + 26); cx.restore();
 }
+// 이벤트 상자
+let chest = null, chestT = 15;
+const pieceFx = [];
+function drawChest(dt){
+  if (!chest) return; chest.t += dt; if (chest.t > 12){ chest = null; return; }
+  const bob = Math.abs(Math.sin(time*5))*14, a = chest.t > 10 ? 1 - (chest.t-10)/2 : Math.min(1, chest.t*3);
+  glow(chest.x, chest.y - 40, 90, '#ffe27a', 0.5*a);
+  cx.save(); cx.globalAlpha = a; shadow(chest.x, chest.y, 40, 1);
+  if (IMG.gift) cx.drawImage(IMG.gift, chest.x - 50, chest.y - 100 - bob, 100, 100);
+  cx.font='400 22px Jua'; cx.textAlign='center'; cx.lineWidth=5; cx.strokeStyle='#000'; cx.strokeText('눌러서 열기!', chest.x, chest.y + 26); cx.fillStyle='#ffe27a'; cx.fillText('눌러서 열기!', chest.x, chest.y + 26);
+  cx.restore();
+}
+function drawPieces(dt){
+  for (let i=pieceFx.length-1;i>=0;i--){ const p = pieceFx[i]; if (p.delay > 0){ p.delay -= dt; continue; } p.k += dt;
+    if (p.k < 0.5){ p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 1200*dt; }
+    else { const u = ease.inOut(Math.min(1,(p.k-0.5)/0.5)); if (p.sx == null){ p.sx = p.x; p.sy = p.y; } p.x = p.sx + (tabX(1) - p.sx)*u; p.y = p.sy + (795 - p.sy)*u; if (u >= 1){ pieceFx.splice(i,1); continue; } }
+    cx.save(); cx.globalCompositeOperation='lighter'; glow(p.x, p.y, 34, '#c78bff', 0.8); cx.restore();
+    cx.save(); cx.translate(p.x, p.y); cx.rotate(time*6); cx.fillStyle = '#e9d0ff'; cx.strokeStyle='#4a1a7a'; cx.lineWidth=3;
+    cx.beginPath(); cx.moveTo(0,-14); cx.lineTo(11,0); cx.lineTo(0,14); cx.lineTo(-11,0); cx.closePath(); cx.fill(); cx.stroke(); cx.restore(); }
+}
+const tabX = i => [112, 232, 352][i];
 function drawMob(m){
   const dying = m.dead > 0, d = dying ? Math.min(1, m.dead/0.4) : 0;
   const walking = m.x > STOP; const bob = walking ? Math.abs(Math.sin(m.hop))*10 : 0;
@@ -415,7 +493,9 @@ function frame(now){
   if (spawnT <= 0 && al < (bossOn ? 2 : 6)){ spawn(false); spawnT = rnd(0.6, 1.2); }
   for (let i=mobs.length-1;i>=0;i--) if (mobs[i].dead > 0.6) mobs.splice(i,1);
   freeT -= dt; if (freeT <= 0){ freeT = 3; summon(true); }
-  for (const t in heroes){ const hr = heroes[t]; if (!hr.on || hr.appear < 1) continue; if (t !== 'stone' && !bestOf(t)) continue;
+  placeActors(dt);
+  chestT -= dt; if (chestT <= 0 && !chest){ chestT = 40; chest = { x:rnd(420, 620), y:rnd(500, 700), t:0 }; toast('이벤트 상자가 나타났어요!'); }
+  for (const t in heroes){ const hr = heroes[t]; if (hr.mode === 'none' || hr.appear < 1) continue;
     hr.timer -= dt; if (hr.timer <= 0) hr.timer = attack(hr) ? cdOf(t) * rnd(0.9,1.1) : 0.2; }
   updShots(dt);
   hurt = Math.max(0, hurt - dt*3);
@@ -432,13 +512,77 @@ function frame(now){
   drawGround();
   const ents = Object.values(heroes).map(h => ({y:h.y, d:()=>drawHero(h, dt)})).concat(mobs.map(m=>({y:m.y, d:()=>drawMob(m)})));
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.d());
-  drawShots();
+  drawShots(); drawChest(dt);
   cx.restore();
   drawPanel();
+  drawPieces(dt);
   cx.save(); cx.translate(ox,oy); drawFx(dt); drawNums(dt); cx.restore();
   drawCoins(dt); drawBars();
   requestAnimationFrame(frame);
 }
+
+// ---------- 영웅 · 제작 탭 ----------
+const HIMG = { stone:'h00', orb:'h09', sword:'h03', arrow:'h12', egg:'h17' };
+const ICON = {};
+function itemIcon(t, lv){ const key = t+lv; if (ICON[key]) return ICON[key]; const c = document.createElement('canvas'); c.width = c.height = 96; const save = cx; cx = c.getContext('2d');
+  try { drawItem(t, lv, 48, 50, 30, 0); } finally { cx = save; } return ICON[key] = c.toDataURL(); }
+let tab = 0;
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { tab = +b.dataset.t;
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.getElementById('paneH').classList.toggle('on', tab === 1); document.getElementById('paneC').classList.toggle('on', tab === 2); sig = ''; updPanels(); });
+function craftItem(t){ let bi = -1; grid.forEach((it,i) => { if (it && it.t === t && it.lv >= RECIPE[t].lv && (bi < 0 || it.lv < grid[bi].lv)) bi = i; }); return bi; }
+const canCraft = t => craftItem(t) >= 0 && gold >= RECIPE[t].gold && own[t].star < MAX_STAR;
+const canPiece = t => own[t].pieces >= piecesNeed(t) && own[t].star < MAX_STAR;
+function gain(t, how){
+  const o = own[t];
+  if (!o.have){ o.have = true; o.star = 1; if (equipped.length < MAX_EQ) equipped.push(t);
+    banner(TYPES[t].who + ' 획득!', TYPES[t].name + ' 피해 ×' + bonus(t).toFixed(1) + (equipped.includes(t) ? ' · 바로 장착했어요' : '')); }
+  else { o.star++; banner(TYPES[t].who + ' ' + o.star + '성!', TYPES[t].name + ' 피해 ×' + (1.5 + 0.4*(o.star-1)).toFixed(1)); }
+  shake = 14; sig = ''; updPanels();
+}
+function givePieces(t, n, src){ own[t].pieces += n; toast(src + ': ' + TYPES[t].who + ' 조각 +' + n); sig = ''; updPanels(); }
+function openChest(){ const c = chest; chest = null;
+  addFx({type:'img', k:'star', x:c.x, y:c.y-50, s0:0.3, s1:1.3, life:.6, add:true}); burst(c.x, c.y-50, 26, '#ffe27a'); shake = 10;
+  if (Math.random() < 0.7){ const t = Object.keys(TYPES)[Math.floor(Math.random()*5)], n = 2 + Math.floor(Math.random()*3);
+    for (let i=0;i<n;i++) pieceFx.push({ t, x:c.x, y:c.y-50, vx:rnd(-220,220), vy:rnd(-520,-320), k:0, delay:i*0.08 });
+    givePieces(t, n, '이벤트 상자'); }
+  else { const v = Math.round(150 * Math.pow(1.3, stageNo-1)); for (let i=0;i<8;i++) coins.push({x:c.x+rnd(-20,20), y:c.y-50, vx:rnd(-240,240), vy:rnd(-600,-380), land:c.y+rnd(-10,20), phase:0, t:0, val:Math.round(v/8)}); toast('이벤트 상자: 골드!'); }
+}
+let sig = '';
+function updPanels(){
+  const T = Object.keys(TYPES);
+  document.getElementById('dotH').classList.toggle('on', T.some(canPiece));
+  document.getElementById('dotC').classList.toggle('on', T.some(canCraft));
+  const ns = tab + '|' + T.map(t => [own[t].have, own[t].star, own[t].pieces, equipped.indexOf(t), canCraft(t), craftItem(t) >= 0].join(',')).join(';');
+  if (ns === sig) return; sig = ns;
+  if (tab === 1){
+    let h = '<div class="hd">장착한 영웅은 전장에 나와서 자기 물건의 피해를 올려줘요 · 장착 ' + equipped.length + ' / ' + MAX_EQ + '</div>';
+    for (const t of T){ const o = own[t], eq = equipped.includes(t), need = piecesNeed(t);
+      h += '<div class="row' + (eq ? ' eq' : '') + '"><img class="pic' + (o.have ? '' : ' no') + '" src="../proto2d/img/' + HIMG[t] + '.png">';
+      h += '<div class="tx">' + TYPES[t].who + ' <span class="st">' + (o.have ? '★'.repeat(o.star) : '미보유') + '</span>';
+      h += '<small>' + TYPES[t].name + ' 피해 ×' + (o.have ? (1.5 + 0.4*(o.star-1)).toFixed(1) : '1.5') + (eq ? ' (적용 중)' : '') + '</small>';
+      h += '<div class="bar"><b style="width:' + Math.min(100, o.pieces/need*100) + '%"></b></div><small>조각 ' + o.pieces + ' / ' + need + (o.star >= MAX_STAR ? ' · 최고 등급' : '') + '</small></div>';
+      if (canPiece(t)) h += '<button data-a="piece" data-k="' + t + '">' + (o.have ? '★ 올리기' : '얻기') + '</button>';
+      else if (o.have) h += '<button class="blue" data-a="eq" data-k="' + t + '">' + (eq ? '해제' : '장착') + '</button>';
+      h += '</div>'; }
+    document.getElementById('paneH').innerHTML = h;
+  }
+  if (tab === 2){
+    let h = '<div class="hd">물건과 골드로 영웅을 만들어요 · 이미 있으면 ★이 올라가요</div>';
+    for (const t of T){ const o = own[t], r = RECIPE[t], hasIt = craftItem(t) >= 0, hasG = gold >= r.gold;
+      h += '<div class="row"><img class="pic' + (o.have ? '' : ' no') + '" src="../proto2d/img/' + HIMG[t] + '.png"><div class="tx">' + TYPES[t].who + (o.have ? ' <span class="st">' + '★'.repeat(o.star) + '</span>' : '');
+      h += '<div class="need"><img src="' + itemIcon(t, r.lv) + '"><span class="' + (hasIt ? 'ok' : 'ng') + '">' + TYPES[t].name + ' ' + r.lv + '단계 이상</span> + <span class="' + (hasG ? 'ok' : 'ng') + '">💰' + r.gold.toLocaleString() + '</span></div></div>';
+      h += '<button data-a="craft" data-k="' + t + '"' + (canCraft(t) ? '' : ' disabled') + '>' + (o.have ? '★ 올리기' : '제작') + '</button></div>'; }
+    document.getElementById('paneC').innerHTML = h;
+  }
+}
+document.getElementById('paneH').onclick = document.getElementById('paneC').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return; const t = b.dataset.k, a = b.dataset.a;
+  if (a === 'eq'){ const i = equipped.indexOf(t); if (i >= 0) equipped.splice(i,1); else if (equipped.length >= MAX_EQ){ toast('장착은 ' + MAX_EQ + '명까지예요'); return; } else equipped.push(t); sig = ''; updPanels(); }
+  else if (a === 'piece'){ if (!canPiece(t)) return; own[t].pieces -= piecesNeed(t); gain(t); }
+  else if (a === 'craft'){ if (!canCraft(t)) return; const i = craftItem(t); grid[i] = null; gold -= RECIPE[t].gold; goldShown = Math.min(goldShown, gold); updBtns(); gain(t); }
+};
+setInterval(updPanels, 400);
 load().then(() => { const l = document.getElementById('load'); l.style.opacity = 0; setTimeout(()=>l.remove(),400); updTop(); updBtns(); requestAnimationFrame(t=>{ last=t; frame(t); }); });
 })();
 </script>
