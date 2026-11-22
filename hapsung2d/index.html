@@ -879,7 +879,7 @@ function drawNums(dt){
   cx.restore();
 }
 // 큰 숫자 줄여 쓰기
-function fmt(v){ if (v >= 1e8) return (v/1e8).toFixed(1)+'억'; if (v >= 1e4) return (v/1e4).toFixed(v>=1e5?0:1)+'만'; return v.toLocaleString(); }
+function fmt(v){ if (v >= 1e20) return (v/1e20).toFixed(1)+'해'; if (v >= 1e16) return (v/1e16).toFixed(1)+'경'; if (v >= 1e12) return (v/1e12).toFixed(1)+'조'; if (v >= 1e8) return (v/1e8).toFixed(1)+'억'; if (v >= 1e4) return (v/1e4).toFixed(v>=1e5?0:1)+'만'; return v.toLocaleString(); }
 const goldEl = document.getElementById('gold');
 function drawCoins(dt){
   for (let i=coins.length-1;i>=0;i--){ const c = coins[i]; c.t += dt;
