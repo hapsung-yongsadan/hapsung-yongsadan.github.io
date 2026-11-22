@@ -161,7 +161,7 @@ const cv = document.getElementById('cv'), stage = document.getElementById('stage
 function fit(){ const r = stage.getBoundingClientRect(), d = Math.min(2, devicePixelRatio||1); cv.width = Math.round(r.width*d); cv.height = Math.round(r.height*d); }
 addEventListener('resize', fit); fit();
 
-const SRC = { g:'g00', h0:'h04', h1:'h08', h2:'h11', h3:'h13', h4:'h15', m0:'a00_m0', m1:'a00_m1', m2:'a00_m2', m3:'a00_m3', boss:'boss00',
+const SRC = { g00:'g00.jpg', a00_m0:'a00_m0', a00_m1:'a00_m1', a00_m2:'a00_m2', a00_m3:'a00_m3', boss00:'boss00', heal:'heal',
   shock:'shock', boom:'explosion', coin:'i_gold', star:'star', ring:'circle_gold', arc:'circle_arcane', slash:'slash', bolt:'lightning', gift:'i_gift' };
 // 영웅 진화: ★1~2 / ★3~4 / ★5 에서 그림과 이름이 바뀜
 const EVO = {
@@ -176,7 +176,12 @@ const heroKey = (t, star) => EVO[t][evoIdx(Math.max(1, star||1))].k;
 const heroName = (t, star) => EVO[t][evoIdx(Math.max(1, star||1))].n;
 for (const t in EVO) for (const e of EVO[t]) SRC[e.k] = e.k;
 const IMG = {}, BOX = {};
-const load = () => Promise.all(Object.entries(SRC).map(([k,f]) => new Promise(r => { const im = new Image(); im.onload = () => { IMG[k]=im; BOX[k]=bbox(im); r(); }; im.onerror = r; im.src = '../proto2d/img/'+f+'.png'; })));
+const load = () => Promise.all(Object.entries(SRC).map(([k,f]) => new Promise(r => { const im = new Image(); im.onload = () => { IMG[k]=im; BOX[k]=bbox(im); r(); }; im.onerror = r; im.src = '../proto2d/img/' + (f.includes('.') ? f : f + '.png'); })));
+// 사냥터별 몬스터·보스·바닥 그림은 그 사냥터에 처음 갈 때 불러옴
+const areaLoading = {};
+function needArea(a){ a = clamp(a, 0, 9); if (areaLoading[a]) return; areaLoading[a] = true; const aa = String(a).padStart(2,'0');
+  const keys = [0,1,2,3].map(i => ['a'+aa+'_m'+i, 'a'+aa+'_m'+i+'.png']).concat([['boss'+aa, 'boss'+aa+'.png'], ['g'+aa, 'g'+aa+'.jpg']]);
+  for (const [k,f] of keys){ if (IMG[k]) continue; const im = new Image(); im.onload = () => { IMG[k] = im; BOX[k] = bbox(im); }; im.src = '../proto2d/img/' + f; } }
 function bbox(im){ const c = document.createElement('canvas'), s = 128/Math.max(im.width,im.height); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
   const g = c.getContext('2d'); g.drawImage(im,0,0,c.width,c.height); let d; try{ d = g.getImageData(0,0,c.width,c.height).data; }catch(e){ return {x0:0,y0:0,x1:im.width,y1:im.height}; }
   let x0=c.width,y0=c.height,x1=0,y1=0; for(let y=0;y<c.height;y++) for(let x=0;x<c.width;x++) if(d[(y*c.width+x)*4+3]>40){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
@@ -307,7 +312,21 @@ function drawItem(t, lv, x, y, r, rot=0, alpha){
 // ---------- 상태 ----------
 let gold = 60, goldShown = 60, stageNo = 1, kills = 0, bossOn = false, sumCost = 20, atkLv = 1, atkCost = 60;
 const KB = 15;
-const AREA = ['초록 들판','이끼 숲','안개 늪','바람 언덕','붉은 화산'];
+// 사냥터 10곳 × 5스테이지 (51스테이지부터는 마왕성이 계속 이어짐)
+const AREA = ['초록 들판','이끼 숲','안개 늪','바람 언덕','붉은 화산','황금 사막','얼음 성채','심해 신전','천공의 섬','마왕성'];
+const MOB_NAMES = [
+  ['새싹 슬라임','칼잡이 쥐','잎사귀 애벌레','꽃잎 요정'], ['성난 버섯','덩굴 뱀','이끼 늑대','고목 정령'], ['늪 두꺼비','독버섯','안개 유령','도마뱀 전사'],
+  ['회오리 정령','하피','바람 독수리','바위 트롤'], ['꼬마 악마','용암 골렘','불도마뱀','마그마 슬라임'], ['사막 전갈','미라','사막 도적','황금 풍뎅이'],
+  ['눈사람 병사','서리 늑대','얼음 해골기사','얼음 정령'], ['산호 게','심해 해파리','어인 전사','심연 조개'], ['구름 양','번개 정령','천공 골렘','하늘 가오리'],
+  ['해골 기사','암흑 마녀','지옥견','가고일'] ];
+const BOSS_NAMES = ['고블린 왕','숲의 히드라','이끼 골렘','폭풍 늑대왕','화염 마신','황금 전갈왕','서리 드래곤','크라켄','천공 그리폰','마왕'];
+const areaIdx = st => Math.min(9, Math.floor((st-1)/5));
+const areaLabel = st => AREA[areaIdx(st)] + ' ' + (st - areaIdx(st)*5);
+const bossName = () => BOSS_NAMES[areaIdx(stageNo)];
+const josa = (w, a, b) => { const c = w.charCodeAt(w.length-1) - 0xAC00; return c >= 0 && c <= 11171 && c % 28 ? a : b; };
+const pad2 = a => String(a).padStart(2,'0');
+const mobKey = (a, i) => IMG['a'+pad2(a)+'_m'+i] ? 'a'+pad2(a)+'_m'+i : 'a00_m'+i;
+const bossKey = a => IMG['boss'+pad2(a)] ? 'boss'+pad2(a) : 'boss00';
 const mobs = [], shots = [], coins = [];
 // 사냥터와 방어전이 동시에 돌아가므로 이펙트·숫자 목록을 장면별로 따로 둠
 const FXS = { idle:{fx:[],nums:[]}, def:{fx:[],nums:[]} };
@@ -363,7 +382,8 @@ function cdOf(t){ return CD[t] * Math.pow(0.9, atkLv-1); }
 function mobHp(){ return Math.round(90 * Math.pow(1.55, stageNo-1)); }
 const rewardMul = () => Math.pow(1.5, stageNo-1);
 function spawn(boss){
-  const m = { k: boss ? 'boss' : 'm'+Math.floor(rnd(0,4)), boss, x: W+100, y: boss ? 640 : rnd(450, 730), h: boss ? 300 : rnd(130,160),
+  const ar = areaIdx(stageNo), slot = Math.floor(rnd(0,4)); needArea(ar); if (stageNo % 5 >= 3) needArea(ar+1);
+  const m = { k: boss ? bossKey(ar) : mobKey(ar, slot), slot: boss ? -1 : slot, boss, x: W+100, y: boss ? 640 : rnd(450, 730), h: boss ? 300 : rnd(130,160),
     sp: boss ? 70 : rnd(95,130), flash:0, kb:0, sq:0, dead:0, phase:rnd(0,6), hop:0, atk:rnd(0,1) };
   m.hp = m.max = boss ? mobHp()*28 : mobHp(); mobMods(m); mobs.push(m); return m; }
 for (let i=0;i<3;i++){ const m = spawn(false); m.x = rnd(440, 680); }
@@ -378,20 +398,16 @@ function burst(x,y,n,col){ for(let i=0;i<n;i++){ const a=rnd(0,Math.PI*2), s=rnd
 // ---------- 몬스터 패시브 ----------
 // m0 새싹 슬라임: 받는 피해 -20% / m1 칼잡이 쥐: 공격 속도 2배·이동 +30% / m2 잎사귀 애벌레: 체력 +60%·이동 -30%
 // m3 꽃잎 요정: 3초마다 주변 몬스터 체력 8% 회복 / 보스 고블린 왕: 체력 50% 이하에서 분노(공격력 2배·이동 1.5배)
-const MOB_INFO = {
-  m0: { name:'새싹 슬라임', passive:'말랑한 몸', desc:'받는 피해 -20%' },
-  m1: { name:'칼잡이 쥐', passive:'재빠른 칼질', desc:'공격 속도 2배 · 이동 속도 +30%' },
-  m2: { name:'잎사귀 애벌레', passive:'단단한 껍질', desc:'체력 +60% · 이동 속도 -30%' },
-  m3: { name:'꽃잎 요정', passive:'치유의 꽃가루', desc:'3초마다 주변 몬스터 체력 8% 회복' },
-  boss: { name:'고블린 왕', passive:'분노', desc:'체력 50% 이하가 되면 공격력 2배 · 이동 속도 1.5배' },
-};
-function mobMods(m){ if (m.k === 'm2'){ m.hp = m.max = Math.round(m.max*1.6); m.sp *= 0.7; } if (m.k === 'm1') m.sp *= 1.3; return m; }
-function mobTakes(m, v){ if (m.k === 'm0') v *= 0.8;
+// 사냥터마다 1번=방어형, 2번=속도형, 3번=탱커형, 4번=회복형, 보스=분노
+const MOB_ROLE = [ { passive:'단단한 몸', desc:'받는 피해 -20%' }, { passive:'재빠른 공격', desc:'공격 속도 2배 · 이동 속도 +30%' },
+  { passive:'두꺼운 가죽', desc:'체력 +60% · 이동 속도 -30%' }, { passive:'치유의 기운', desc:'3초마다 주변 몬스터 체력 8% 회복' } ];
+function mobMods(m){ if (m.slot === 2){ m.hp = m.max = Math.round(m.max*1.6); m.sp *= 0.7; } if (m.slot === 1) m.sp *= 1.3; return m; }
+function mobTakes(m, v){ if (m.slot === 0) v *= 0.8;
   if (m.boss && !m.rage && m.hp - v < m.max*0.5){ m.rage = true; m.sp *= 1.5; callout(m.x, m.y - m.h - 30, '분노!', '#ff5a3a'); shake = Math.max(shake, 14); }
   return Math.round(v); }
-const mobAtkSpd = m => m.k === 'm1' ? 2 : 1;
+const mobAtkSpd = m => m.slot === 1 ? 2 : 1;
 const mobAtkMul = m => m.rage ? 2 : 1;
-function mobHeal(m, dt, list){ if (m.k !== 'm3') return; m.healT = (m.healT ?? 3) - dt; if (m.healT > 0) return; m.healT = 3;
+function mobHeal(m, dt, list){ if (m.slot !== 3) return; m.healT = (m.healT ?? 3) - dt; if (m.healT > 0) return; m.healT = 3;
   let any = false; for (const o of list) if (!o.dead && o !== m && o.hp < o.max && Math.hypot(o.x-m.x, o.y-m.y) < 220){ const h = Math.round(o.max*0.08); o.hp = Math.min(o.max, o.hp + h); num(o.x, o.y - o.h*0.9, h, false, '#7fff8a'); any = true; }
   if (any){ addFx({type:'img', k:'heal', x:m.x, y:m.y - m.h*0.5, s0:0.3, s1:0.8, life:.6, add:true, amax:0.6}); } }
 function hit(m, v, crit, col){
@@ -415,7 +431,7 @@ function die(m){
   updTop();
 }
 function updTop(){
-  document.getElementById('stgName').textContent = AREA[Math.floor((stageNo-1)/5)%AREA.length] + ' ' + (((stageNo-1)%5)+1);
+  document.getElementById('stgName').textContent = areaLabel(stageNo);
   document.getElementById('stgSub').textContent = (bossOn ? '보스 전투 중!' : '보스까지 ' + kills + ' / ' + KB) + ' · 보상 ×' + fmt(Math.round(rewardMul()*10)/10);
 }
 
@@ -560,9 +576,11 @@ function drawImgFoot(k, x, y, h, o={}){
   cx.restore(); }
 function shadow(x,y,w,a){ cx.save(); cx.translate(x,y); cx.scale(1,0.32); const g=cx.createRadialGradient(0,0,0,0,0,w); g.addColorStop(0,'rgba(0,0,0,'+(0.5*a)+')'); g.addColorStop(1,'rgba(0,0,0,0)'); cx.fillStyle=g; cx.beginPath(); cx.arc(0,0,w,0,Math.PI*2); cx.fill(); cx.restore(); }
 function rr(x,y,w,h,r){ cx.beginPath(); cx.moveTo(x+r,y); cx.arcTo(x+w,y,x+w,y+h,r); cx.arcTo(x+w,y+h,x,y+h,r); cx.arcTo(x,y+h,x,y,r); cx.arcTo(x,y,x+w,y,r); cx.closePath(); }
-let pat = null;
+let pat = null; const PATS = {};
+function groundPat(){ const k = 'g' + pad2(areaIdx(stageNo)), key = IMG[k] ? k : 'g00'; if (!IMG[key]) return null;
+  if (!PATS[key]){ const c=document.createElement('canvas'); c.width=c.height=384; c.getContext('2d').drawImage(IMG[key],0,0,384,384); PATS[key]=cx.createPattern(c,'repeat'); } return PATS[key]; }
 function drawGround(){
-  if (!pat && IMG.g){ const c=document.createElement('canvas'); c.width=c.height=384; c.getContext('2d').drawImage(IMG.g,0,0,384,384); pat=cx.createPattern(c,'repeat'); }
+  pat = groundPat();
   cx.fillStyle = pat || '#2b4a20'; cx.fillRect(0,0,W,800);
   const g = cx.createLinearGradient(0,0,0,800); g.addColorStop(0,'rgba(10,20,5,.6)'); g.addColorStop(.3,'rgba(10,20,5,0)'); g.addColorStop(.85,'rgba(10,20,5,0)'); g.addColorStop(1,'rgba(10,8,5,.8)');
   cx.fillStyle = g; cx.fillRect(0,0,W,800);
@@ -700,7 +718,7 @@ function drawBars(){
   const b = mobs.find(m=>m.boss && !m.dead); if (!b) return; const bx=90,by=200,bw=W-180,r=Math.max(0,b.hp/b.max);
   cx.fillStyle='rgba(15,8,6,.85)'; rr(bx-6,by-6,bw+12,40,12); cx.fill(); cx.strokeStyle='rgba(242,200,106,.8)'; cx.lineWidth=2.5; rr(bx-6,by-6,bw+12,40,12); cx.stroke();
   const g = cx.createLinearGradient(0,by,0,by+28); g.addColorStop(0,'#ff6a52'); g.addColorStop(1,'#a8141a'); cx.fillStyle=g; rr(bx,by,bw*r,28,8); cx.fill();
-  cx.font='400 24px Jua'; cx.textAlign='center'; cx.lineWidth=6; cx.strokeStyle='#000'; const t='고블린 왕  '+Math.ceil(r*100)+'%'; cx.strokeText(t,W/2,by+22); cx.fillStyle='#fff'; cx.fillText(t,W/2,by+22); }
+  cx.font='400 24px Jua'; cx.textAlign='center'; cx.lineWidth=6; cx.strokeStyle='#000'; const t=bossName()+'  '+Math.ceil(r*100)+'%'; cx.strokeText(t,W/2,by+22); cx.fillStyle='#fff'; cx.fillText(t,W/2,by+22); }
 
 // ---------- 루프 ----------
 let last = performance.now(), spawnT = 0;
@@ -711,7 +729,7 @@ function frame(now){
   useScene('idle'); const sv = [shake, hitStop];
   updEnter();
   spawnT -= dt; const al = mobs.filter(m=>!m.dead).length;
-  if (!bossOn && kills >= KB){ bossOn = true; spawn(true); if (mode === 'idle') banner('보스 등장!', '고블린 왕이 나타났습니다'); shake = 20; updTop(); }
+  if (!bossOn && kills >= KB){ bossOn = true; spawn(true); if (mode === 'idle') banner('보스 등장!', bossName() + josa(bossName(), '이', '가') + ' 나타났습니다'); shake = 20; updTop(); }
   if (spawnT <= 0 && al < (bossOn ? 2 : 6)){ spawn(false); spawnT = rnd(0.6, 1.2); }
   for (let i=mobs.length-1;i>=0;i--) if (mobs[i].dead > 0.6) mobs.splice(i,1);
   flushRare();
@@ -923,7 +941,8 @@ function dFinish(win, quit){
   document.getElementById('dRes').classList.add('on');
 }
 function dSpawn(boss){
-  const m = { k: boss ? 'boss' : 'm'+Math.floor(rnd(0,4)), boss, x: boss ? W/2 : rnd(70, W-70), y: boss ? 110 : rnd(100,160), h: boss ? 250 : rnd(105,130),
+  const ar = areaIdx(stageNo), slot = Math.floor(rnd(0,4)); needArea(ar);
+  const m = { k: boss ? bossKey(ar) : mobKey(ar, slot), slot: boss ? -1 : slot, boss, x: boss ? W/2 : rnd(70, W-70), y: boss ? 110 : rnd(100,160), h: boss ? 250 : rnd(105,130),
     sp: boss ? 36 : rnd(55,75) + Math.min(D.round*2, 25), flash:0, kb:0, sq:0, dead:0, phase:rnd(0,6), hop:rnd(0,6), atk:rnd(0,1), stun:0 };
   m.hp = m.max = boss ? dMobHp(D.round)*25 : dMobHp(D.round); mobMods(m); m.stopY = DWALL - rnd(0,34); D.mobs.push(m); return m; }
 function dTarget(x){ let b=null, bs=-1e9; for (const m of D.mobs){ if (m.dead || m.y < 60) continue; const s = m.y*2 - Math.abs(m.x-x)*0.6; if (s > bs){ bs = s; b = m; } } return b; }
@@ -1048,7 +1067,7 @@ function dDrawMob(m){
   if (!dying && !m.boss && m.hp < m.max){ const w=76, x=m.x-w/2, y=m.y-m.h-14-m.kb; cx.fillStyle='rgba(0,0,0,.7)'; rr(x-2,y-2,w+4,12,6); cx.fill(); cx.fillStyle='#e8433a'; rr(x,y,w*Math.max(0,m.hp/m.max),8,4); cx.fill(); }
 }
 function dDraw(dt){
-  if (!pat && IMG.g){ const c=document.createElement('canvas'); c.width=c.height=384; c.getContext('2d').drawImage(IMG.g,0,0,384,384); pat=cx.createPattern(c,'repeat'); }
+  pat = groundPat();
   cx.fillStyle = pat || '#2b4a20'; cx.fillRect(0,0,W,H);
   const g0 = cx.createLinearGradient(0,0,0,860); g0.addColorStop(0,'rgba(5,10,3,.8)'); g0.addColorStop(.35,'rgba(10,20,5,.1)'); g0.addColorStop(1,'rgba(10,20,5,0)'); cx.fillStyle = g0; cx.fillRect(0,0,W,860);
   D.mobs.slice().sort((a,b)=>a.y-b.y).forEach(dDrawMob);
@@ -1086,7 +1105,7 @@ function dHud(){
     cx.strokeText(tt, W/2, 470); cx.fillStyle='#ffe27a'; cx.fillText(tt, W/2, 470); cx.font='400 26px Jua'; cx.lineWidth=6; const t4 = '같은 영웅 · 같은 별끼리 끌어다 놓으면 합성!'; cx.strokeText(t4, W/2, 518); cx.fillStyle='#fff'; cx.fillText(t4, W/2, 518); cx.restore(); }
   const b = D.mobs.find(m=>m.boss && !m.dead); if (b){ const bx=90,by=150,bw=W-180,br=Math.max(0,b.hp/b.max);
     cx.fillStyle='rgba(15,8,6,.85)'; rr(bx-6,by-6,bw+12,40,12); cx.fill(); const gg = cx.createLinearGradient(0,by,0,by+28); gg.addColorStop(0,'#ff6a52'); gg.addColorStop(1,'#a8141a'); cx.fillStyle=gg; rr(bx,by,bw*br,28,8); cx.fill();
-    cx.font='400 24px Jua'; cx.textAlign='center'; cx.lineWidth=6; cx.strokeStyle='#000'; const tb='고블린 왕  '+Math.ceil(br*100)+'%'; cx.strokeText(tb,W/2,by+22); cx.fillStyle='#fff'; cx.fillText(tb,W/2,by+22); }
+    cx.font='400 24px Jua'; cx.textAlign='center'; cx.lineWidth=6; cx.strokeStyle='#000'; const tb=bossName()+'  '+Math.ceil(br*100)+'%'; cx.strokeText(tb,W/2,by+22); cx.fillStyle='#fff'; cx.fillText(tb,W/2,by+22); }
 }
 function dUpdate(dt){
   if (!D.over){
@@ -1160,7 +1179,7 @@ document.getElementById('offOk').onclick = () => document.getElementById('offlin
 
 // ---- 랭킹 (Firebase) ----
 function power(){ let p = 0; for (const t in TYPES){ const lv = bestOf(t); if (lv) p += dmgOf(t, lv) * bonus(t); } return Math.round(p); }
-const areaName = st => AREA[Math.floor((st-1)/5) % AREA.length] + ' ' + (((st-1)%5)+1);
+const areaName = st => areaLabel(st);
 async function pushRank(){
   if (IS_TEST || !pid || !nick) return; rankDirty = false;
   const body = { fields: { nick:{stringValue:nick}, best:{integerValue:String(bestStage)}, area:{stringValue:areaName(bestStage)}, power:{integerValue:String(power())}, updated:{integerValue:String(Date.now())} } };
