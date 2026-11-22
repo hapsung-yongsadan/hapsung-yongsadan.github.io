@@ -1277,18 +1277,40 @@ function offlineReward(d){
 }
 document.getElementById('offOk').onclick = () => document.getElementById('offline').classList.remove('on');
 
+// ---- Firebase 로그인 (익명): 서버가 로그인한 사용자만 읽고 쓰게 되어 있음 ----
+let auth = null; try { auth = JSON.parse(localStorage.getItem('h2d_auth') || 'null'); } catch(e){}
+let lastNetErr = '';
+async function getToken(){
+  if (auth && auth.token && auth.exp > Date.now() + 60e3) return auth.token;
+  let r, d;
+  if (auth && auth.refresh){
+    r = await fetch('https://securetoken.googleapis.com/v1/token?key=' + FB_KEY, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'grant_type=refresh_token&refresh_token=' + encodeURIComponent(auth.refresh) });
+    d = await r.json(); if (r.ok){ auth = { uid:d.user_id, refresh:d.refresh_token, token:d.id_token, exp: Date.now() + (+d.expires_in)*1000 }; }
+  }
+  if (!r || !r.ok){
+    r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FB_KEY, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{"returnSecureToken":true}' });
+    d = await r.json(); if (!r.ok){ lastNetErr = '로그인 ' + r.status + ' ' + (d.error?.message || ''); throw new Error(lastNetErr); }
+    auth = { uid:d.localId, refresh:d.refreshToken, token:d.idToken, exp: Date.now() + (+d.expiresIn)*1000 };
+  }
+  try { localStorage.setItem('h2d_auth', JSON.stringify(auth)); } catch(e){}
+  if (auth.uid && pid !== auth.uid){ pid = auth.uid; saveGame(); }   // 서버 기록은 로그인 아이디로
+  return auth.token;
+}
+async function fbFetch(url, opt){ const t = await getToken(); opt = opt || {}; opt.headers = Object.assign({'Content-Type':'application/json', 'Authorization':'Bearer ' + t}, opt.headers || {});
+  const r = await fetch(url, opt); if (!r.ok){ let m = ''; try { m = (await r.clone().json()).error?.message || ''; } catch(e){} lastNetErr = r.status + ' ' + m; } return r; }
 // ---- 랭킹 (Firebase) ----
 function power(){ let p = 0; for (const t in TYPES){ const lv = bestOf(t); if (lv) p += dmgOf(t, lv) * bonus(t); } return Math.round(p * atkMul(up.atk) * (1 + (0.18 + critAdd()) * (critMul() - 1))); }
 const areaName = st => areaLabel(st);
 async function pushRank(){
-  if (IS_TEST || !pid || !nick) return; rankDirty = false;
+  if (IS_TEST || !nick) return; rankDirty = false;
+  try { await getToken(); } catch(e){ rankDirty = true; return; }
   const body = { fields: { nick:{stringValue:nick}, best:{integerValue:String(bestStage)}, area:{stringValue:areaName(bestStage)}, power:{integerValue:String(power())}, updated:{integerValue:String(Date.now())} } };
-  try { await fetch(FB_DOC + '/h2d_players/' + pid + '?key=' + FB_KEY, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); } catch(e){ rankDirty = true; }
+  try { await getToken(); const r = await fbFetch(FB_DOC + '/h2d_players/' + pid + '?key=' + FB_KEY, { method:'PATCH', body: JSON.stringify(body) }); if (!r.ok) rankDirty = true; } catch(e){ rankDirty = true; }
 }
 async function loadRank(){
   const list = document.getElementById('rankL'); list.innerHTML = '<div class="rk-msg">불러오는 중…</div>';
   try {
-    const r = await fetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', headers:{'Content-Type':'application/json'},
+    const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST',
       body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_players'}], orderBy:[{field:{fieldPath:'best'}, direction:'DESCENDING'}], limit:50 } }) });
     const arr = await r.json(); if (!r.ok) throw new Error();
     const rows = arr.filter(e => e.document).map(e => { const f = e.document.fields || {}, id = e.document.name.split('/').pop();
@@ -1296,7 +1318,7 @@ async function loadRank(){
       .sort((a,b) => b.best - a.best || b.power - a.power);
     if (!rows.length){ list.innerHTML = '<div class="rk-msg">아직 기록이 없어요. 첫 번째 주인공이 되어보세요!</div>'; return; }
     list.innerHTML = rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + (i < 3 ? ['🥇','🥈','🥉'][i] : i+1) + '</b><span>' + esc(o.nick) + '</span><em>' + areaName(Math.max(1,o.best)) + '<small>전투력 ' + fmt(o.power) + '</small></em></div>').join('');
-  } catch(e){ list.innerHTML = '<div class="rk-msg">랭킹 서버에 연결하지 못했어요. 잠시 후 다시 열어주세요.</div>'; }
+  } catch(e){ list.innerHTML = '<div class="rk-msg">랭킹 서버에 연결하지 못했어요. 잠시 후 다시 열어주세요.<br><small style="opacity:.6">' + esc(lastNetErr || String(e.message || e)) + '</small></div>'; }
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
@@ -1346,12 +1368,12 @@ function tierOf(total){ let n = 0; while (n < RAID_TIERS.length && total >= RAID
 
 // ---- 서버 ----
 async function raidPush(){
-  if (IS_TEST || !pid || !nick || raidSave.dmg <= 0) return;
+  if (IS_TEST || !nick || raidSave.dmg <= 0) return;
   const body = { fields: { nick:{stringValue:nick}, dmg:{doubleValue:raidSave.dmg}, best:{doubleValue:raidSave.best}, updated:{integerValue:String(Date.now())} } };
-  try { await fetch(FB_DOC + '/h2d_raid_w' + raidSave.wk + '/' + pid + '?key=' + FB_KEY, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); } catch(e){}
+  try { await getToken(); await fbFetch(FB_DOC + '/h2d_raid_w' + raidSave.wk + '/' + pid + '?key=' + FB_KEY, { method:'PATCH', body: JSON.stringify(body) }); } catch(e){}
 }
 async function raidFetch(wk){
-  const r = await fetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', headers:{'Content-Type':'application/json'},
+  const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST',
     body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_raid_w' + wk}], orderBy:[{field:{fieldPath:'dmg'}, direction:'DESCENDING'}], limit:100 } }) });
   const arr = await r.json(); if (!r.ok) throw new Error();
   return arr.filter(e => e.document).map(e => { const f = e.document.fields || {};
@@ -1388,7 +1410,7 @@ async function openRaid(){
     tierEl.innerHTML = '모두의 피해 <b>' + fmt(Math.round(total)) + '</b> · <b>' + tier + '</b> / 10단계 격파' + (tier < 10 ? '<div class="bar"><b style="width:' + Math.min(100, total/next*100) + '%"></b></div><small>다음 단계까지 ' + fmt(Math.round(next - total)) + '</small>' : '');
     list.innerHTML = rows.length ? rows.slice(0, 30).map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + (i < 3 ? ['🥇','🥈','🥉'][i] : i+1) + '</b><span>' + esc(o.nick) + '</span><em>' + fmt(Math.round(o.dmg)) + '</em></div>').join('')
                             : '<div class="rk-msg">아직 아무도 도전하지 않았어요. 첫 번째로 때려보세요!</div>';
-  } catch(e){ tierEl.textContent = ''; list.innerHTML = '<div class="rk-msg">레이드 서버에 연결하지 못했어요.<br>도전은 할 수 있고, 기록은 연결되면 올라가요.</div>'; }
+  } catch(e){ tierEl.textContent = ''; list.innerHTML = '<div class="rk-msg">레이드 서버에 연결하지 못했어요.<br>도전은 할 수 있고, 기록은 연결되면 올라가요.<br><small style="opacity:.6">' + esc(lastNetErr) + '</small></div>'; }
 }
 document.getElementById('bRaid').onclick = openRaid;
 document.getElementById('rbX').onclick = () => document.getElementById('raidL').classList.remove('on');
