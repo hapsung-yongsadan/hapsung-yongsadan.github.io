@@ -1004,7 +1004,8 @@ function dRender(dt){
 }
 
 if (location.hash === '#evo'){ location.hash = '#test'; own.stone.star = 3; own.sword.star = 5; own.orb.star = 5; own.arrow.star = 3; own.egg.star = 5; }
-if (location.hash === '#test'){ gold = goldShown = 99999; for (const t in own){ own[t].have = true; own[t].star = own[t].star || 1; } equipped = ['orb','sword','egg']; tickets = 3; RARE = 0.03; }
+if (location.hash === '#test'){ gold = goldShown = 99999; for (const t in own){ own[t].have = true; own[t].star = own[t].star || 1; } equipped = ['orb','sword','egg']; tickets = 3; }
+if (location.hash === '#rare') RARE = 0.03;   // 희귀 돌 확인용 주소에서만 3%
 load().then(() => { const l = document.getElementById('load'); l.style.opacity = 0; setTimeout(()=>l.remove(),400); updTop(); updBtns(); requestAnimationFrame(t=>{ last=t; frame(t); }); });
 })();
 </script>
