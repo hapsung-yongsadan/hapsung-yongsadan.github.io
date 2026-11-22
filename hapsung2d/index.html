@@ -181,7 +181,10 @@ const own = {}; for (const t in TYPES) own[t] = { have:false, star:0, pieces:0 }
 own.stone.have = true; own.stone.star = 1;
 let equipped = ['stone'];
 const MAX_EQ = 3, MAX_STAR = 5;
-const bonus = t => equipped.includes(t) ? 1.5 + 0.4*(own[t].star-1) : 1;
+// 영웅 별 보너스: 확률이 낮은 만큼 크게 오름
+const STAR_BONUS = [1.5, 2.2, 3.5, 6, 12];
+const starBonus = st => STAR_BONUS[clamp(st,1,5)-1];
+const bonus = t => equipped.includes(t) ? starBonus(own[t].star) : 1;
 // 영웅 패시브 (장착했을 때만, 별이 오를수록 강해짐)
 const has = t => equipped.includes(t);
 const PST = t => Math.max(1, own[t].star);
@@ -319,13 +322,17 @@ const pop = {};
 let drag = null;
 
 // 공격력: 돌 10단계보다 진화 1단계가 더 강함
-function dmgOf(t, lv){ const base = t === 'stone' ? 22*Math.pow(1.6, lv-1) : 22*Math.pow(1.6, 9)*1.6*Math.pow(1.6, lv-1);
+// 진화 물건 단계별 배율: 합성 확률이 낮을수록 한 단계의 가치가 커짐
+const EVO_MULT = [1, 1.9, 3.8, 7.5, 15, 32, 70, 160, 380, 1000];
+function dmgOf(t, lv){ const base = t === 'stone' ? 22*Math.pow(1.6, lv-1) : 22*Math.pow(1.6, 9)*1.6*EVO_MULT[clamp(lv,1,10)-1];
   const k = { stone:1, orb:1.2, sword:1.0, arrow:0.45, egg:0.7 }[t]; return Math.round(base * k); }
 const CD = { stone:0.45, orb:1.6, sword:1.0, arrow:0.7, egg:1.3 };
 function cdOf(t){ return CD[t] * Math.pow(0.9, atkLv-1); }
 
 // ---------- 몬스터 ----------
-function mobHp(){ return Math.round(90 * Math.pow(1.5, stageNo-1)); }
+// 사냥터 난이도와 보상: 스테이지마다 체력 ×1.55, 보상 ×1.5 (+보스 조각·코인도 늘어남)
+function mobHp(){ return Math.round(90 * Math.pow(1.55, stageNo-1)); }
+const rewardMul = () => Math.pow(1.5, stageNo-1);
 function spawn(boss){
   const m = { k: boss ? 'boss' : 'm'+Math.floor(rnd(0,4)), boss, x: W+100, y: boss ? 640 : rnd(450, 730), h: boss ? 300 : rnd(130,160),
     sp: boss ? 70 : rnd(95,130), flash:0, kb:0, sq:0, dead:0, phase:rnd(0,6), hop:0, atk:rnd(0,1) };
@@ -350,10 +357,10 @@ function die(m){
   m.dead = 0.001;
   addFx({type:'img', k:'boom', x:m.x, y:m.y-m.h*0.45, s0:m.boss?1.3:0.45, s1:m.boss?2.4:0.9, life:.42, add:true});
   burst(m.x, m.y-m.h*0.45, m.boss?30:10, m.boss?'#ffcf5a':'#c8ff9a');
-  const n = m.boss ? 12 : 2, val = Math.round((m.boss ? 60 : 4) * Math.pow(1.3, stageNo-1));
+  const n = m.boss ? 12 : 2, val = Math.round((m.boss ? 60 : 4) * rewardMul());
   if (mode !== 'idle'){ gold += n*val; updBtns(); } else for (let i=0;i<n;i++) coins.push({x:m.x+rnd(-20,20), y:m.y-m.h*0.4, vx:rnd(-240,240), vy:rnd(-600,-380), land:m.y+rnd(-10,20), phase:0, t:0, val});
   if (m.boss){ shake = 30; hitStop = 0.12; bossOn = false; kills = 0; stageNo++; heroHp = heroMax;
-    const t = Object.keys(TYPES)[Math.floor(Math.random()*5)], n = 3 + Math.floor(Math.random()*3); givePieces(t, n, '보스 보상'); addCoin(1);
+    const t = Object.keys(TYPES)[Math.floor(Math.random()*5)], n = 3 + Math.floor(Math.random()*3) + Math.floor((stageNo-1)/3); givePieces(t, n, '보스 보상'); addCoin(1 + Math.floor(stageNo/5));
     for (let i=0;i<n;i++) pieceFx.push({ t, x:m.x+rnd(-30,30), y:m.y-m.h*0.5, vx:rnd(-200,200), vy:rnd(-500,-300), k:0, delay:i*0.08 }); }
   else if (!bossOn) kills++;
   if (!m.boss && Math.random() < RARE) rareDrop(m);
@@ -361,7 +368,7 @@ function die(m){
 }
 function updTop(){
   document.getElementById('stgName').textContent = AREA[Math.floor((stageNo-1)/5)%AREA.length] + ' ' + (((stageNo-1)%5)+1);
-  document.getElementById('stgSub').textContent = bossOn ? '보스 전투 중!' : '보스까지 ' + kills + ' / ' + KB;
+  document.getElementById('stgSub').textContent = (bossOn ? '보스 전투 중!' : '보스까지 ' + kills + ' / ' + KB) + ' · 보상 ×' + fmt(Math.round(rewardMul()*10)/10);
 }
 
 // ---------- 영웅 공격 ----------
@@ -421,9 +428,9 @@ function summon(free){
 // ---------- 희망코인 · 소모 아이템 · 확률 ----------
 let coin = 10; const inv = { protect:0, boost:0 }; let useMode = null;
 // 진화 물건(구슬·무기·화살·정령 알) 합성 성공 확률: 목표 단계별 %
-const MERGE_RATE = { 2:90, 3:85, 4:80, 5:70, 6:60, 7:50, 8:40, 9:30, 10:20 };
+const MERGE_RATE = { 2:80, 3:70, 4:60, 5:50, 6:40, 7:30, 8:20, 9:10, 10:5 };
 // 영웅 제작 성공 확률: 처음 얻기 / ★2 / ★3 / ★4 / ★5
-const CRAFT_RATE = { 1:80, 2:70, 3:55, 4:40, 5:25 };
+const CRAFT_RATE = { 1:90, 2:85, 3:50, 4:25, 5:10 };
 const craftRate = t => CRAFT_RATE[own[t].have ? own[t].star + 1 : 1];
 function addCoin(n, why){ coin += n; updCoin(); if (why) toast(why + ' · 희망코인 +' + n); }
 function updCoin(){ document.getElementById('coin').textContent = coin; sig = ''; }
@@ -474,7 +481,8 @@ cv.addEventListener('pointermove', e => { if (mode === 'def'){ dMove(lp(e)); ret
 // 판매: 끌어서 아래 버튼 자리에 놓기. 값 = 지금 뽑기 가격 기준(뽑아서 바로 팔면 손해)
 const SELL_Y = 1170;
 function sellValue(it){ if (!it) return 0; const base = clamp(bestOf('stone') - 3, 1, 7), lv = it.t === 'stone' ? it.lv : MAXLV + it.lv;
-  return Math.max(1, Math.round(sumCost * 0.4 * Math.pow(2, lv - base))); }
+  const worth = it.t === 'stone' ? Math.pow(2, lv - base) : Math.pow(2, MAXLV + 1 - base) * EVO_MULT[it.lv-1];
+  return Math.max(1, Math.round(sumCost * 0.4 * worth)); }
 function sellItem(i){ const it = grid[i]; if (!it) return; const v = sellValue(it); grid[i] = null; gold += v; updBtns(); sig = '';
   const p = slotPos(i); burst(p.x, p.y, 12, '#ffe27a'); toast((it.t === 'stone' ? TYPES.stone.names[it.lv-1] : TYPES[it.t].names[it.lv-1]) + ' 판매 · 💰' + fmt(v)); }
 // 0~3 랜덤 강화권: 0단계 30% · 1단계 40% · 2단계 20% · 3단계 10%
@@ -669,7 +677,7 @@ function frame(now){
     if (m.dead){ m.dead += dt; continue; }
     if (m.stun > 0){ m.stun -= dt; if (Math.random() < 0.3) addFx({type:'spark', x:m.x+rnd(-30,30), y:m.y-m.h*rnd(0.2,0.9), vx:rnd(-60,60), vy:rnd(-160,-40), life:.25, col:'#ffb8e4', size:rnd(6,11)}); continue; }
     if (m.x > STOP + (m.boss?40:0)){ m.x -= m.sp*dt; m.hop += dt*10; }
-    else { m.atk += dt; if (m.atk >= 1){ m.atk = 0; let v = Math.round((m.boss?60:14) * Math.pow(1.3, stageNo-1)); if (has('stone')) v = Math.round(v * (1 - (20+5*PST('stone'))/100)); heroHp -= v; hurt = 1; num(m.x - 90, m.y - m.h*0.6, v, false, '#ff6a5a'); } } }
+    else { m.atk += dt; if (m.atk >= 1){ m.atk = 0; let v = Math.round((m.boss?60:14) * Math.pow(1.34, stageNo-1)); if (has('stone')) v = Math.round(v * (1 - (20+5*PST('stone'))/100)); heroHp -= v; hurt = 1; num(m.x - 90, m.y - m.h*0.6, v, false, '#ff6a5a'); } } }
   heroHp = Math.min(heroMax, heroHp + dt*20*(has('stone') ? 2 : 1));
   // 유성우
   updMeteors(flames, dt, mobs, hit);
@@ -712,8 +720,8 @@ function gain(t, how){
   if (!o.have){ o.have = true; o.star = 1; if (equipped.length < MAX_EQ) equipped.push(t);
     banner(TYPES[t].who + ' 획득!', TYPES[t].name + ' 피해 ×' + bonus(t).toFixed(1) + (equipped.includes(t) ? ' · 바로 장착했어요' : '')); }
   else { const before = heroName(t, o.star); o.star++;
-    if (o.star === 3 || o.star === 5){ evoFx(t); banner('진화!', before + ' → ' + heroName(t, o.star) + ' · ' + TYPES[t].name + ' 피해 ×' + (1.5 + 0.4*(o.star-1)).toFixed(1)); }
-    else banner(TYPES[t].who + ' ' + o.star + '성!', TYPES[t].name + ' 피해 ×' + (1.5 + 0.4*(o.star-1)).toFixed(1)); }
+    if (o.star === 3 || o.star === 5){ evoFx(t); banner('진화!', before + ' → ' + heroName(t, o.star) + ' · ' + TYPES[t].name + ' 피해 ×' + starBonus(o.star).toFixed(1)); }
+    else banner(TYPES[t].who + ' ' + o.star + '성!', TYPES[t].name + ' 피해 ×' + starBonus(o.star).toFixed(1)); }
   shake = 14; sig = ''; updPanels();
 }
 // 진화 연출: 장착 중이면 전장 영웅에 빛
@@ -727,7 +735,7 @@ function openChest(){ const c = chest; chest = null;
     for (let i=0;i<n;i++) pieceFx.push({ t, x:c.x, y:c.y-50, vx:rnd(-220,220), vy:rnd(-520,-320), k:0, delay:i*0.08 });
     givePieces(t, n, '이벤트 상자'); }
   else if (Math.random() < 0.5){ const n = 1 + Math.floor(Math.random()*3); addCoin(n, '이벤트 상자'); }
-  else { const v = Math.round(150 * Math.pow(1.3, stageNo-1)); for (let i=0;i<8;i++) coins.push({x:c.x+rnd(-20,20), y:c.y-50, vx:rnd(-240,240), vy:rnd(-600,-380), land:c.y+rnd(-10,20), phase:0, t:0, val:Math.round(v/8)}); toast('이벤트 상자: 골드!'); }
+  else { const v = Math.round(150 * rewardMul()); for (let i=0;i<8;i++) coins.push({x:c.x+rnd(-20,20), y:c.y-50, vx:rnd(-240,240), vy:rnd(-600,-380), land:c.y+rnd(-10,20), phase:0, t:0, val:Math.round(v/8)}); toast('이벤트 상자: 골드!'); }
 }
 let sig = '';
 function updPanels(){
@@ -756,7 +764,7 @@ function updPanels(){
     for (const t of T){ const o = own[t], eq = equipped.includes(t), need = piecesNeed(t);
       h += '<div class="row' + (eq ? ' eq' : '') + '"><img class="pic' + (o.have ? '' : ' no') + '" src="../proto2d/img/' + heroKey(t, own[t].star) + '.png">';
       h += '<div class="tx">' + TYPES[t].who + ' <span class="st">' + (o.have ? '★'.repeat(o.star) : '미보유') + '</span>';
-      h += '<small>' + TYPES[t].name + ' 피해 ×' + (o.have ? (1.5 + 0.4*(o.star-1)).toFixed(1) : '1.5') + (eq ? ' (적용 중)' : '') + '<br><span style="color:' + (eq ? '#9dff9a' : '#b8a88a') + '">패시브 · ' + PASSIVE[t].name + ': ' + PASSIVE[t].desc(Math.max(1,o.star)) + '</span></small>';
+      h += '<small>' + TYPES[t].name + ' 피해 ×' + (o.have ? starBonus(o.star).toFixed(1) : '1.5') + (eq ? ' (적용 중)' : '') + '<br><span style="color:' + (eq ? '#9dff9a' : '#b8a88a') + '">패시브 · ' + PASSIVE[t].name + ': ' + PASSIVE[t].desc(Math.max(1,o.star)) + '</span></small>';
       h += '<div class="bar"><b style="width:' + Math.min(100, o.pieces/need*100) + '%"></b></div><small>조각 ' + o.pieces + ' / ' + need + (o.star >= MAX_STAR ? ' · 최고 등급' : o.have && o.star < 5 ? ' · ' + (o.star < 3 ? '★3' : '★5') + '에 ' + EVO[t][evoIdx(o.star)+1].n + '(으)로 진화' : '') + '</small></div>';
       if (canPiece(t)) h += '<button data-a="piece" data-k="' + t + '">' + (o.have ? '★ 올리기' : '얻기') + '</button>';
       else if (o.have) h += '<button class="blue" data-a="eq" data-k="' + t + '">' + (eq ? '해제' : '장착') + '</button>';
@@ -850,7 +858,7 @@ function dEndRound(){
 }
 function dFinish(win, quit){
   D.over = true; const c = D.cleared;
-  const g = Math.round(c * 40 * Math.pow(1.3, stageNo-1)) + (win ? Math.round(300 * Math.pow(1.3, stageNo-1)) : 0);
+  const g = Math.round(c * 40 * rewardMul()) + (win ? Math.round(300 * rewardMul()) : 0);
   const pc = Math.floor(c * 0.8) + (win ? 5 : 0);
   const got = {}; for (let i=0;i<pc;i++){ const t = Object.keys(TYPES)[Math.floor(Math.random()*5)]; got[t] = (got[t]||0) + 1; }
   const hc = Math.floor(c/3) + (win ? 5 : 0); coin += hc; updCoin();
