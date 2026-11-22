@@ -111,6 +111,12 @@
   .rk-msg{font-family:Jua;font-size:3.8cqw;color:#d8c39a;padding:6cqw 0}
   .tin{font-family:Jua;font-size:5cqw;text-align:center;padding:2.4cqw;border-radius:12px;border:2px solid #f2c86a;background:#120c08;color:#fff;margin-bottom:1.5cqw;user-select:text;-webkit-user-select:text}
   .terr{font-family:Jua;font-size:3.4cqw;color:#ff8a7a;min-height:5cqw}
+  #rateTip{position:absolute;left:3%;right:3%;top:56.2cqh;z-index:9;display:none;text-align:center;padding:1.6cqw 2cqw;border-radius:12px;font-family:Jua;font-size:3.8cqw;color:#fff;
+    background:rgba(20,14,10,.94);border:2px solid #f2c86a;box-shadow:0 4px 14px rgba(0,0,0,.6);pointer-events:none}
+  #rateTip.on{display:block}
+  #rateTip b{font-size:5.4cqw;font-weight:400}
+  #rateTip.g b{color:#9dff9a} #rateTip.y b{color:#ffe27a} #rateTip.r b{color:#ff8a7a}
+  #rateTip.dim{opacity:.85;font-size:3.3cqw} #rateTip.dim b{font-size:4cqw;color:#ffe27a}
   #load{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#120c08;font-family:Jua;font-size:6cqw;color:#f2c86a;transition:opacity .4s}
 </style>
 </head>
@@ -130,6 +136,7 @@
   <div class="pane idle" id="paneC"></div>
   <div class="pane idle" id="paneS"></div>
   <div id="sellZ">여기에 놓으면 판매</div>
+  <div id="rateTip"></div>
   <div id="useBar"><span id="useTxt">강화할 물건을 누르세요</span><button id="useCancel">취소</button></div>
   <button id="bEnter" class="idle">⚔ 성벽 방어전<small id="enterN">입장권 2 / 3</small></button>
   <button class="dui quit" id="dQuit">포기하고 나가기</button>
@@ -541,7 +548,7 @@ cv.addEventListener('pointerdown', e => { const p = lp(e), i = slotAt(p); if (mo
   if (useMode){ if (i >= 0 && grid[i]){ if (grid[i].t === 'stone'){ toast('진화 물건에만 쓸 수 있어요'); return; } if (grid[i].lv >= MAXLV){ toast('이미 최고 단계예요'); return; } useBoost(i); } return; }
   if (chest && Math.hypot(p.x - chest.x, p.y - (chest.y - 50)) < 90){ openChest(); return; }
   if (i >= 0 && grid[i]){ drag = { i, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); } });
-cv.addEventListener('pointermove', e => { if (mode === 'def'){ dMove(lp(e)); return; } if (drag){ const p = lp(e); drag.x = p.x; drag.y = p.y; sellZone(true, p.y > SELL_Y, '여기에 놓으면 판매 · 💰' + fmt(sellValue(grid[drag.i]))); } });
+cv.addEventListener('pointermove', e => { if (mode === 'def'){ dMove(lp(e)); return; } if (drag){ const p = lp(e); drag.x = p.x; drag.y = p.y; sellZone(true, p.y > SELL_Y, '여기에 놓으면 판매 · 💰' + fmt(sellValue(grid[drag.i]))); rateTip(p); } });
 // 판매: 끌어서 아래 버튼 자리에 놓기. 값 = 지금 뽑기 가격 기준(뽑아서 바로 팔면 손해)
 const SELL_Y = 1170;
 function sellValue(it){ if (!it) return 0; const base = clamp(bestOf('stone') - 3, 1, 7), lv = it.t === 'stone' ? it.lv : MAXLV + it.lv;
@@ -559,8 +566,15 @@ function useBoost(i){ const it = grid[i]; inv.boost--; setUse(null);
 function setUse(m){ useMode = m; document.getElementById('useBar').classList.toggle('on', !!m);
   if (m){ document.getElementById('useTxt').textContent = '랜덤 강화권: 강화할 진화 물건을 누르세요 (남은 ' + inv.boost + '장)'; document.querySelector('#tabs button[data-t="0"]').click(); } }
 document.getElementById('useCancel').onclick = () => setUse(null);
+// 합성 확률 안내: 손가락·탭에 가리지 않게 가방 위쪽에 크게 표시
+function rateTip(p){ const el = document.getElementById('rateTip'); const it = p && drag ? grid[drag.i] : null;
+  if (!it || it.t === 'stone'){ el.className = ''; return; }
+  const j = slotAt(p);
+  if (j < 0 || j === drag.i || !canMerge(it, grid[j])){ el.className = 'on dim'; el.innerHTML = '같은 ' + TYPES[it.t].name + ' Lv.' + it.lv + '에 놓으면 합성 · 성공 <b>' + MERGE_RATE[it.lv+1] + '%</b>'; return; }
+  const r = MERGE_RATE[it.lv+1]; el.className = 'on ' + (r >= 60 ? 'g' : r >= 30 ? 'y' : 'r');
+  el.innerHTML = 'Lv.' + (it.lv+1) + ' 합성 성공 <b>' + r + '%</b>' + (inv.protect ? ' · 🛡 실패해도 보호 (' + inv.protect + '장)' : ' · 실패하면 1개 파괴'); }
 function sellZone(on, hot, txt){ const z = document.getElementById('sellZ'); z.classList.toggle('on', !!on); z.classList.toggle('hot', !!hot); if (txt) z.textContent = txt; }
-cv.addEventListener('pointerup', e => { sellZone(false); if (mode === 'def'){ dUp(lp(e)); return; } if (!drag) return; const pp = lp(e), j = slotAt(pp), i = drag.i; drag = null;
+cv.addEventListener('pointerup', e => { sellZone(false); rateTip(null); if (mode === 'def'){ dUp(lp(e)); return; } if (!drag) return; const pp = lp(e), j = slotAt(pp), i = drag.i; drag = null;
   if (pp.y > SELL_Y){ sellItem(i); return; }
   if (j < 0 || j === i) return;
   if (canMerge(grid[i], grid[j])) merge(i, j);
@@ -609,8 +623,7 @@ function drawPanel(){
   }
   if (drag && grid[drag.i]){ const it = grid[drag.i]; drawItem(it.t, it.lv, drag.x, drag.y, 40, Math.sin(time*10)*0.1);
     const j = slotAt(drag); if (j >= 0 && j !== drag.i && canMerge(it, grid[j])){ const p = slotPos(j); cx.strokeStyle='#9dff9a'; cx.lineWidth=4; rr(p.x-CW/2+6,p.y-CH/2+6,CW-12,CH-12,16); cx.stroke();
-      if (it.t !== 'stone'){ const r = MERGE_RATE[it.lv+1]; cx.font='400 24px Jua'; cx.textAlign='center'; cx.lineWidth=6; cx.strokeStyle='#000'; const t = '성공 ' + r + '%' + (inv.protect ? ' · 보호' : '');
-        cx.strokeText(t, p.x, p.y - CH/2 - 6); cx.fillStyle = r >= 70 ? '#9dff9a' : r >= 40 ? '#ffe27a' : '#ff8a7a'; cx.fillText(t, p.x, p.y - CH/2 - 6); } } }
+ } }
 }
 function drawHero(hr, dt){
   hr.kick = Math.max(0, hr.kick - dt*6); if (hr.mode === 'none') return;
