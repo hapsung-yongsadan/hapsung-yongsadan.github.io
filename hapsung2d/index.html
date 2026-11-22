@@ -365,7 +365,7 @@ const rewardMul = () => Math.pow(1.5, stageNo-1);
 function spawn(boss){
   const m = { k: boss ? 'boss' : 'm'+Math.floor(rnd(0,4)), boss, x: W+100, y: boss ? 640 : rnd(450, 730), h: boss ? 300 : rnd(130,160),
     sp: boss ? 70 : rnd(95,130), flash:0, kb:0, sq:0, dead:0, phase:rnd(0,6), hop:0, atk:rnd(0,1) };
-  m.hp = m.max = boss ? mobHp()*28 : mobHp(); mobs.push(m); return m; }
+  m.hp = m.max = boss ? mobHp()*28 : mobHp(); mobMods(m); mobs.push(m); return m; }
 for (let i=0;i<3;i++){ const m = spawn(false); m.x = rnd(440, 680); }
 const STOP = 370;
 
@@ -375,8 +375,27 @@ function addFx(o){ o.t=0; fx.push(o); }
 function num(x,y,v,crit,col){ nums.push({x:x+rnd(-14,14),y,v,crit,col,t:0}); }
 function burst(x,y,n,col){ for(let i=0;i<n;i++){ const a=rnd(0,Math.PI*2), s=rnd(180,480); addFx({type:'spark',x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-180,life:rnd(.3,.6),col,size:rnd(8,18)}); } }
 
+// ---------- 몬스터 패시브 ----------
+// m0 새싹 슬라임: 받는 피해 -20% / m1 칼잡이 쥐: 공격 속도 2배·이동 +30% / m2 잎사귀 애벌레: 체력 +60%·이동 -30%
+// m3 꽃잎 요정: 3초마다 주변 몬스터 체력 8% 회복 / 보스 고블린 왕: 체력 50% 이하에서 분노(공격력 2배·이동 1.5배)
+const MOB_INFO = {
+  m0: { name:'새싹 슬라임', passive:'말랑한 몸', desc:'받는 피해 -20%' },
+  m1: { name:'칼잡이 쥐', passive:'재빠른 칼질', desc:'공격 속도 2배 · 이동 속도 +30%' },
+  m2: { name:'잎사귀 애벌레', passive:'단단한 껍질', desc:'체력 +60% · 이동 속도 -30%' },
+  m3: { name:'꽃잎 요정', passive:'치유의 꽃가루', desc:'3초마다 주변 몬스터 체력 8% 회복' },
+  boss: { name:'고블린 왕', passive:'분노', desc:'체력 50% 이하가 되면 공격력 2배 · 이동 속도 1.5배' },
+};
+function mobMods(m){ if (m.k === 'm2'){ m.hp = m.max = Math.round(m.max*1.6); m.sp *= 0.7; } if (m.k === 'm1') m.sp *= 1.3; return m; }
+function mobTakes(m, v){ if (m.k === 'm0') v *= 0.8;
+  if (m.boss && !m.rage && m.hp - v < m.max*0.5){ m.rage = true; m.sp *= 1.5; callout(m.x, m.y - m.h - 30, '분노!', '#ff5a3a'); shake = Math.max(shake, 14); }
+  return Math.round(v); }
+const mobAtkSpd = m => m.k === 'm1' ? 2 : 1;
+const mobAtkMul = m => m.rage ? 2 : 1;
+function mobHeal(m, dt, list){ if (m.k !== 'm3') return; m.healT = (m.healT ?? 3) - dt; if (m.healT > 0) return; m.healT = 3;
+  let any = false; for (const o of list) if (!o.dead && o !== m && o.hp < o.max && Math.hypot(o.x-m.x, o.y-m.y) < 220){ const h = Math.round(o.max*0.08); o.hp = Math.min(o.max, o.hp + h); num(o.x, o.y - o.h*0.9, h, false, '#7fff8a'); any = true; }
+  if (any){ addFx({type:'img', k:'heal', x:m.x, y:m.y - m.h*0.5, s0:0.3, s1:0.8, life:.6, add:true, amax:0.6}); } }
 function hit(m, v, crit, col){
-  if (!m || m.dead) return; v = Math.round(v);
+  if (!m || m.dead) return; v = mobTakes(m, v);
   m.hp -= v; m.flash = 1; m.kb = crit ? 30 : 14; m.sq = 1;
   num(m.x, m.y - m.h*0.95, v, crit);
   if (crit){ shake = Math.max(shake, 9); hitStop = Math.max(hitStop, 0.04); burst(m.x, m.y-m.h*0.5, 8, col || '#ffe08a'); }
@@ -704,9 +723,10 @@ function frame(now){
   hurt = Math.max(0, hurt - dt*3);
   for (const m of mobs){ m.phase += dt*4; m.flash = Math.max(0,m.flash-dt*7); m.sq = Math.max(0,m.sq-dt*5); m.kb = Math.max(0,m.kb-dt*140);
     if (m.dead){ m.dead += dt; continue; }
+    mobHeal(m, dt, mobs);
     if (m.stun > 0){ m.stun -= dt; if (Math.random() < 0.3) addFx({type:'spark', x:m.x+rnd(-30,30), y:m.y-m.h*rnd(0.2,0.9), vx:rnd(-60,60), vy:rnd(-160,-40), life:.25, col:'#ffb8e4', size:rnd(6,11)}); continue; }
     if (m.x > STOP + (m.boss?40:0)){ m.x -= m.sp*dt; m.hop += dt*10; }
-    else { m.atk += dt; if (m.atk >= 1){ m.atk = 0; let v = Math.round((m.boss?60:14) * Math.pow(1.34, stageNo-1)); if (has('stone')) v = Math.round(v * (1 - (20+5*PST('stone'))/100)); heroHp -= v; hurt = 1; num(m.x - 90, m.y - m.h*0.6, v, false, '#ff6a5a'); } } }
+    else { m.atk += dt * mobAtkSpd(m); if (m.atk >= 1){ m.atk = 0; let v = Math.round((m.boss?60:14) * Math.pow(1.34, stageNo-1) * mobAtkMul(m)); if (has('stone')) v = Math.round(v * (1 - (20+5*PST('stone'))/100)); heroHp -= v; hurt = 1; num(m.x - 90, m.y - m.h*0.6, v, false, '#ff6a5a'); } } }
   heroHp = Math.min(heroMax, heroHp + dt*20*(has('stone') ? 2 : 1));
   // 유성우
   updMeteors(flames, dt, mobs, hit);
@@ -905,10 +925,10 @@ function dFinish(win, quit){
 function dSpawn(boss){
   const m = { k: boss ? 'boss' : 'm'+Math.floor(rnd(0,4)), boss, x: boss ? W/2 : rnd(70, W-70), y: boss ? 110 : rnd(100,160), h: boss ? 250 : rnd(105,130),
     sp: boss ? 36 : rnd(55,75) + Math.min(D.round*2, 25), flash:0, kb:0, sq:0, dead:0, phase:rnd(0,6), hop:rnd(0,6), atk:rnd(0,1), stun:0 };
-  m.hp = m.max = boss ? dMobHp(D.round)*25 : dMobHp(D.round); m.stopY = DWALL - rnd(0,34); D.mobs.push(m); return m; }
+  m.hp = m.max = boss ? dMobHp(D.round)*25 : dMobHp(D.round); mobMods(m); m.stopY = DWALL - rnd(0,34); D.mobs.push(m); return m; }
 function dTarget(x){ let b=null, bs=-1e9; for (const m of D.mobs){ if (m.dead || m.y < 60) continue; const s = m.y*2 - Math.abs(m.x-x)*0.6; if (s > bs){ bs = s; b = m; } } return b; }
 function dHit(m, v, crit, col){
-  if (!m || m.dead) return; v = Math.round(v); m.hp -= v; m.flash = 1; m.kb = crit ? 24 : 10; m.sq = 1; num(m.x, m.y - m.h*0.95, v, crit);
+  if (!m || m.dead) return; v = mobTakes(m, v); m.hp -= v; m.flash = 1; m.kb = crit ? 24 : 10; m.sq = 1; num(m.x, m.y - m.h*0.95, v, crit);
   if (crit){ shake = Math.max(shake, 8); hitStop = Math.max(hitStop, 0.035); burst(m.x, m.y-m.h*0.5, 8, col || '#ffe08a'); }
   if (m.hp <= 0){ m.dead = 0.001; addFx({type:'img', k:'boom', x:m.x, y:m.y-m.h*0.45, s0:m.boss?1.2:0.4, s1:m.boss?2.4:0.85, life:.42, add:true});
     burst(m.x, m.y-m.h*0.45, m.boss?30:10, m.boss?'#ffcf5a':'#c8ff9a'); D.gold += m.boss ? 40 : 3 + Math.floor(D.round/2); if (m.boss){ shake = 28; hitStop = 0.1; } }
@@ -1080,9 +1100,10 @@ function dUpdate(dt){
     updMeteors(D.flames, dt, D.mobs, dHit);
     for (const m of D.mobs){ m.phase += dt*4; m.flash = Math.max(0,m.flash-dt*7); m.sq = Math.max(0,m.sq-dt*5); m.kb = Math.max(0,m.kb-dt*120);
       if (m.dead){ m.dead += dt; continue; }
+      mobHeal(m, dt, D.mobs);
       if (m.stun > 0){ m.stun -= dt; if (Math.random() < 0.3) addFx({type:'spark', x:m.x+rnd(-25,25), y:m.y-m.h*rnd(0.2,0.9), vx:rnd(-60,60), vy:rnd(-160,-40), life:.25, col:'#ffb8e4', size:rnd(6,11)}); continue; }
       if (m.y < m.stopY){ m.y += m.sp*dt; m.hop += dt*9; }
-      else { m.atk += dt; if (m.atk >= 1){ m.atk = 0; let v = Math.round((m.boss ? 80 : 12) * Math.pow(1.2, D.round-1));
+      else { m.atk += dt * mobAtkSpd(m); if (m.atk >= 1){ m.atk = 0; let v = Math.round((m.boss ? 80 : 12) * Math.pow(1.2, D.round-1) * mobAtkMul(m));
         if (dHas('stone')) v = Math.round(v * (1 - (20+5*PST('stone'))/100)); D.wall -= v; num(m.x, DWALL+60, v, false, '#ff6a5a'); shake = Math.max(shake, m.boss ? 10 : 2); } } }
     for (let i=D.mobs.length-1;i>=0;i--) if (D.mobs[i].dead > 0.6) D.mobs.splice(i,1);
     if (D.wall <= 0){ D.wall = 0; dFinish(false); }
