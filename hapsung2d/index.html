@@ -81,6 +81,14 @@
     background:rgba(120,20,10,.75);font-family:Jua;font-size:4.4cqw;color:#fff;pointer-events:none}
   #sellZ.on{display:grid}
   #sellZ.hot{background:rgba(200,40,20,.92);border-style:solid;transform:scale(1.03)}
+  .pill.coin{margin-left:0;min-width:17cqw;border-color:rgba(159,212,255,.6)}
+  .pill.coin span{color:#cfe8ff}
+  .row .rate{color:#ffe27a}
+  #useBar{position:absolute;left:3%;right:3%;top:61.4cqh;z-index:8;display:none;justify-content:space-between;align-items:center;padding:1cqw 3cqw;border-radius:10px;
+    background:rgba(40,80,140,.92);border:2px solid #9fd4ff;font-family:Jua;font-size:3.4cqw}
+  #useBar.on{display:flex}
+  #useBar button{font-family:Jua;font-size:3.2cqw;color:#fff;background:rgba(0,0,0,.35);border:1.5px solid #cfe8ff;border-radius:8px;padding:.6cqw 2cqw}
+  #toast{white-space:normal!important;max-width:90%;text-align:center;line-height:1.3}
   #load{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#120c08;font-family:Jua;font-size:6cqw;color:#f2c86a;transition:opacity .4s}
 </style>
 </head>
@@ -90,6 +98,7 @@
   <div class="top idle">
     <div class="stg"><span id="stgName">초록 들판 1</span><small id="stgSub">보스까지 0 / 15</small></div>
     <div class="pill"><img src="../proto2d/img/i_gold.png" alt=""><span id="gold">0</span></div>
+    <div class="pill coin"><img src="../proto2d/img/i_gem.png" alt=""><span id="coin">0</span></div>
   </div>
   <button class="test idle" id="bTest">시험용: 10단계 돌 받기</button>
   <div id="banner">진화!<small></small></div>
@@ -99,6 +108,7 @@
   <div class="pane idle" id="paneC"></div>
   <div class="pane idle" id="paneS"></div>
   <div id="sellZ">여기에 놓으면 판매</div>
+  <div id="useBar"><span id="useTxt">강화할 물건을 누르세요</span><button id="useCancel">취소</button></div>
   <button id="bEnter" class="idle">⚔ 성벽 방어전<small id="enterN">입장권 2 / 3</small></button>
   <button class="dui quit" id="dQuit">포기하고 나가기</button>
   <button class="dui quit hunt" id="dHunt">◀ 사냥터 보기<small id="dHuntN">사냥 중</small></button>
@@ -343,7 +353,7 @@ function die(m){
   const n = m.boss ? 12 : 2, val = Math.round((m.boss ? 60 : 4) * Math.pow(1.3, stageNo-1));
   if (mode !== 'idle'){ gold += n*val; updBtns(); } else for (let i=0;i<n;i++) coins.push({x:m.x+rnd(-20,20), y:m.y-m.h*0.4, vx:rnd(-240,240), vy:rnd(-600,-380), land:m.y+rnd(-10,20), phase:0, t:0, val});
   if (m.boss){ shake = 30; hitStop = 0.12; bossOn = false; kills = 0; stageNo++; heroHp = heroMax;
-    const t = Object.keys(TYPES)[Math.floor(Math.random()*5)], n = 3 + Math.floor(Math.random()*3); givePieces(t, n, '보스 보상');
+    const t = Object.keys(TYPES)[Math.floor(Math.random()*5)], n = 3 + Math.floor(Math.random()*3); givePieces(t, n, '보스 보상'); addCoin(1);
     for (let i=0;i<n;i++) pieceFx.push({ t, x:m.x+rnd(-30,30), y:m.y-m.h*0.5, vx:rnd(-200,200), vy:rnd(-500,-300), k:0, delay:i*0.08 }); }
   else if (!bossOn) kills++;
   if (!m.boss && Math.random() < RARE) rareDrop(m);
@@ -408,6 +418,15 @@ function summon(free){
   const base = clamp(bestOf('stone') - 3, 1, 7);
   put({ t:'stone', lv: Math.random() < 0.12 ? base+1 : base }); updBtns();
 }
+// ---------- 희망코인 · 소모 아이템 · 확률 ----------
+let coin = 10; const inv = { protect:0, boost:0 }; let useMode = null;
+// 진화 물건(구슬·무기·화살·정령 알) 합성 성공 확률: 목표 단계별 %
+const MERGE_RATE = { 2:90, 3:85, 4:80, 5:70, 6:60, 7:50, 8:40, 9:30, 10:20 };
+// 영웅 제작 성공 확률: 처음 얻기 / ★2 / ★3 / ★4 / ★5
+const CRAFT_RATE = { 1:80, 2:70, 3:55, 4:40, 5:25 };
+const craftRate = t => CRAFT_RATE[own[t].have ? own[t].star + 1 : 1];
+function addCoin(n, why){ coin += n; updCoin(); if (why) toast(why + ' · 희망코인 +' + n); }
+function updCoin(){ document.getElementById('coin').textContent = coin; sig = ''; }
 function merge(a, b){ // a를 b 위로
   const A = grid[a], B = grid[b]; grid[a] = null;
   const p = slotPos(b);
@@ -419,6 +438,12 @@ function merge(a, b){ // a를 b 위로
     banner(TYPES[nt].name + ' 탄생!', own[nt].have ? '같은 ' + TYPES[nt].name + '끼리 합쳐서 키워보세요' : TYPES[nt].name + ' ' + RECIPE[nt].lv + '단계로 ' + TYPES[nt].who + ' 제작 가능!');
     updPanels();
   } else {
+    if (B.t !== 'stone'){ const r = MERGE_RATE[B.lv+1];
+      if (Math.random()*100 >= r){
+        addFx({type:'img', k:'shock', x:p.x, y:p.y, s0:0.2, s1:0.8, life:.35, add:true}); burst(p.x, p.y, 16, '#8a8a8a'); shake = Math.max(shake, 10); pop[b] = { t:0, kind:'merge' };
+        if (inv.protect > 0){ inv.protect--; grid[a] = A; toast('합성 실패… 파괴방지 주문서가 지켜줬어요 (남은 ' + inv.protect + '장)'); }
+        else toast('합성 실패! ' + TYPES[A.t].names[A.lv-1] + ' 하나가 부서졌어요 (' + r + '% 확률)');
+        sig = ''; return; } }
     grid[b] = { t:B.t, lv:B.lv+1 }; pop[b] = { t:0, kind:'merge' };
     burst(p.x, p.y, 14, `hsl(${hue(B.lv+1)},100%,70%)`); shake = Math.max(shake, 5);
     if (B.lv + 1 === MAXLV) toast(TYPES[B.t].names[MAXLV-1] + '! 최고 단계' + (B.t === 'stone' ? ' · 두 개 합치면 진화!' : ''));
@@ -428,7 +453,7 @@ const canMerge = (A, B) => A && B && A !== B && A.t === B.t && A.lv === B.lv && 
 function autoMerge(){
   let did = false, guard = 0;
   while (guard++ < 40){ let found = false;
-    outer: for (let i=0;i<grid.length;i++) for (let j=i+1;j<grid.length;j++) if (canMerge(grid[i], grid[j])){ merge(j, i); found = did = true; break outer; }
+    outer: for (let i=0;i<grid.length;i++) for (let j=i+1;j<grid.length;j++) if (canMerge(grid[i], grid[j]) && grid[i].t === 'stone'){ merge(j, i); found = did = true; break outer; }
     if (!found) break; }
   if (!did) toast('합칠 수 있는 게 없어요');
 }
@@ -442,6 +467,7 @@ function updBtns(){ document.getElementById('cSum').textContent = '💰 ' + sumC
 function lp(e){ const r = cv.getBoundingClientRect(); return { x:(e.clientX - r.left) / r.width * W, y:(e.clientY - r.top) / r.height * H }; }
 function slotAt(p){ const c = Math.floor((p.x - GX)/CW), r = Math.floor((p.y - GY)/CH); if (c<0||c>=COLS||r<0||r>=ROWS) return -1; return r*COLS + c; }
 cv.addEventListener('pointerdown', e => { const p = lp(e), i = slotAt(p); if (mode === 'def'){ dDown(p, e); return; }
+  if (useMode){ if (i >= 0 && grid[i]){ if (grid[i].t === 'stone'){ toast('진화 물건에만 쓸 수 있어요'); return; } if (grid[i].lv >= MAXLV){ toast('이미 최고 단계예요'); return; } useBoost(i); } return; }
   if (chest && Math.hypot(p.x - chest.x, p.y - (chest.y - 50)) < 90){ openChest(); return; }
   if (i >= 0 && grid[i]){ drag = { i, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); } });
 cv.addEventListener('pointermove', e => { if (mode === 'def'){ dMove(lp(e)); return; } if (drag){ const p = lp(e); drag.x = p.x; drag.y = p.y; sellZone(true, p.y > SELL_Y, '여기에 놓으면 판매 · 💰' + fmt(sellValue(grid[drag.i]))); } });
@@ -451,6 +477,16 @@ function sellValue(it){ if (!it) return 0; const base = clamp(bestOf('stone') - 
   return Math.max(1, Math.round(sumCost * 0.4 * Math.pow(2, lv - base))); }
 function sellItem(i){ const it = grid[i]; if (!it) return; const v = sellValue(it); grid[i] = null; gold += v; updBtns(); sig = '';
   const p = slotPos(i); burst(p.x, p.y, 12, '#ffe27a'); toast((it.t === 'stone' ? TYPES.stone.names[it.lv-1] : TYPES[it.t].names[it.lv-1]) + ' 판매 · 💰' + fmt(v)); }
+// 0~3 랜덤 강화권: 0단계 30% · 1단계 40% · 2단계 20% · 3단계 10%
+function useBoost(i){ const it = grid[i]; inv.boost--; setUse(null);
+  const r = Math.random(), n = r < 0.3 ? 0 : r < 0.7 ? 1 : r < 0.9 ? 2 : 3, to = Math.min(MAXLV, it.lv + n), p = slotPos(i);
+  if (n === 0){ toast('강화 결과: +0 … 아무 일도 없었어요'); burst(p.x, p.y, 8, '#8a8a8a'); }
+  else { grid[i] = { t:it.t, lv:to }; pop[i] = { t:0, kind:'evolve' }; addFx({type:'img', k:'star', x:p.x, y:p.y, s0:0.3, s1:1.2, life:.6, add:true}); burst(p.x, p.y, 20 + n*10, `hsl(${hue(to)},100%,70%)`); shake = 8 + n*5;
+    banner('+' + n + ' 강화!', TYPES[it.t].names[it.lv-1] + ' → ' + TYPES[it.t].names[to-1]); }
+  sig = ''; }
+function setUse(m){ useMode = m; document.getElementById('useBar').classList.toggle('on', !!m);
+  if (m){ document.getElementById('useTxt').textContent = '랜덤 강화권: 강화할 진화 물건을 누르세요 (남은 ' + inv.boost + '장)'; document.querySelector('#tabs button[data-t="0"]').click(); } }
+document.getElementById('useCancel').onclick = () => setUse(null);
 function sellZone(on, hot, txt){ const z = document.getElementById('sellZ'); z.classList.toggle('on', !!on); z.classList.toggle('hot', !!hot); if (txt) z.textContent = txt; }
 cv.addEventListener('pointerup', e => { sellZone(false); if (mode === 'def'){ dUp(lp(e)); return; } if (!drag) return; const pp = lp(e), j = slotAt(pp), i = drag.i; drag = null;
   if (pp.y > SELL_Y){ sellItem(i); return; }
@@ -479,7 +515,7 @@ function drawPanel(){
   const g = cx.createLinearGradient(0,770,0,H); g.addColorStop(0,'#3a2716'); g.addColorStop(1,'#1a110a'); cx.fillStyle = g; cx.fillRect(0,770,W,H-770);
   cx.fillStyle = '#f2c86a'; cx.fillRect(0,770,W,4); cx.fillStyle='rgba(0,0,0,.35)'; cx.fillRect(0,774,W,8);
   cx.textAlign='right'; cx.font = '400 19px Jua'; cx.fillStyle='#d8c39a';
-  const sl = bestOf('stone'); cx.fillText(sl >= MAXLV ? '10단계 돌 2개 → 진화!' : '돌 ' + sl + ' / 10단계', W-40, 812);
+  const sl = bestOf('stone'); cx.fillText((inv.protect ? '🛡' + inv.protect + '  ' : '') + (sl >= MAXLV ? '10단계 돌 2개 → 진화!' : '돌 ' + sl + ' / 10단계'), W-40, 812);
   for (let i=0;i<grid.length;i++){ const p = slotPos(i), x = p.x - CW/2 + 6, y = p.y - CH/2 + 6, w = CW-12, h = CH-12, it = grid[i];
     cx.fillStyle = 'rgba(0,0,0,.4)'; rr(x,y+4,w,h,16); cx.fill();
     const eq = it && grid.findIndex(o => o && o.t === it.t && o.lv === bestOf(it.t)) === i;
@@ -498,7 +534,9 @@ function drawPanel(){
     if (it.t === 'stone' && it.lv === MAXLV){ cx.font='400 16px Jua'; cx.fillStyle='#ffe27a'; cx.strokeText('진화 가능', x+w/2, y+16); cx.fillText('진화 가능', x+w/2, y+16); }
   }
   if (drag && grid[drag.i]){ const it = grid[drag.i]; drawItem(it.t, it.lv, drag.x, drag.y, 40, Math.sin(time*10)*0.1);
-    const j = slotAt(drag); if (j >= 0 && j !== drag.i && canMerge(it, grid[j])){ const p = slotPos(j); cx.strokeStyle='#9dff9a'; cx.lineWidth=4; rr(p.x-CW/2+6,p.y-CH/2+6,CW-12,CH-12,16); cx.stroke(); } }
+    const j = slotAt(drag); if (j >= 0 && j !== drag.i && canMerge(it, grid[j])){ const p = slotPos(j); cx.strokeStyle='#9dff9a'; cx.lineWidth=4; rr(p.x-CW/2+6,p.y-CH/2+6,CW-12,CH-12,16); cx.stroke();
+      if (it.t !== 'stone'){ const r = MERGE_RATE[it.lv+1]; cx.font='400 24px Jua'; cx.textAlign='center'; cx.lineWidth=6; cx.strokeStyle='#000'; const t = '성공 ' + r + '%' + (inv.protect ? ' · 보호' : '');
+        cx.strokeText(t, p.x, p.y - CH/2 - 6); cx.fillStyle = r >= 70 ? '#9dff9a' : r >= 40 ? '#ffe27a' : '#ff8a7a'; cx.fillText(t, p.x, p.y - CH/2 - 6); } } }
 }
 function drawHero(hr, dt){
   hr.kick = Math.max(0, hr.kick - dt*6); if (hr.mode === 'none') return;
@@ -688,6 +726,7 @@ function openChest(){ const c = chest; chest = null;
   if (Math.random() < 0.7){ const t = Object.keys(TYPES)[Math.floor(Math.random()*5)], n = 2 + Math.floor(Math.random()*3);
     for (let i=0;i<n;i++) pieceFx.push({ t, x:c.x, y:c.y-50, vx:rnd(-220,220), vy:rnd(-520,-320), k:0, delay:i*0.08 });
     givePieces(t, n, '이벤트 상자'); }
+  else if (Math.random() < 0.5){ const n = 1 + Math.floor(Math.random()*3); addCoin(n, '이벤트 상자'); }
   else { const v = Math.round(150 * Math.pow(1.3, stageNo-1)); for (let i=0;i<8;i++) coins.push({x:c.x+rnd(-20,20), y:c.y-50, vx:rnd(-240,240), vy:rnd(-600,-380), land:c.y+rnd(-10,20), phase:0, t:0, val:Math.round(v/8)}); toast('이벤트 상자: 골드!'); }
 }
 let sig = '';
@@ -696,7 +735,7 @@ function updPanels(){
   document.getElementById('dotH').classList.toggle('on', T.some(canPiece));
   document.getElementById('dotC').classList.toggle('on', T.some(canCraft));
   const ns = tab + '|' + T.map(t => [own[t].have, own[t].star, own[t].pieces, equipped.indexOf(t), canCraft(t), craftItem(t) >= 0].join(',')).join(';');
-  const shopSig = [grid.length, tickets, gold >= bagCost(), gold >= TICKET_COST, gold >= packCost()].join(',');
+  const shopSig = [grid.length, tickets, gold >= bagCost(), gold >= TICKET_COST, gold >= packCost(), coin, inv.protect, inv.boost].join(',');
   if (ns + shopSig === sig) return; sig = ns + shopSig;
   if (tab === 3){
     const row = (img, name, desc, a, label, ok) => '<div class="row"><div class="pic ic">' + img + '</div><div class="tx">' + name + '<small>' + desc + '</small></div><button data-a="' + a + '"' + (ok ? '' : ' disabled') + '>' + label + '</button></div>';
@@ -705,6 +744,11 @@ function updPanels(){
                                : row('🎒', '가방 칸 +4', '지금 ' + grid.length + '칸 → ' + (grid.length+4) + '칸', 'bag', '💰' + fmt(bagCost()), gold >= bagCost());
     h += row('⚔', '방어전 입장권 +1', '지금 ' + tickets + '장 (자동 충전은 ' + TICKET_MAX + '장까지)', 'ticket', '💰' + fmt(TICKET_COST), gold >= TICKET_COST);
     h += row('<img src="' + itemIcon('stone', clamp(bestOf('stone')-3,1,7)) + '">', '돌 꾸러미', clamp(bestOf('stone')-3,1,7) + '단계 돌 5개 (뽑기보다 20% 싸요)', 'pack', '💰' + fmt(packCost()), gold >= packCost());
+    h += '<div class="hd" style="margin-top:3cqw">💎 희망코인 상점 · 보유 ' + coin + '개</div>';
+    h += row('🛡', '파괴방지 주문서', '진화 물건 합성이 실패해도 부서지지 않아요 (자동 사용) · 보유 ' + inv.protect + '장', 'protect', '💎 ' + PROTECT_COST, coin >= PROTECT_COST);
+    h += row('✨', '랜덤 강화권 (0~3)', '진화 물건 하나를 0~3단계 올려줘요 · 보유 ' + inv.boost + '장', 'boost', '💎 ' + BOOST_COST, coin >= BOOST_COST);
+    if (inv.boost > 0) h += row('✨', '랜덤 강화권 사용하기', '+0: 30% · +1: 40% · +2: 20% · +3: 10%', 'useboost', '사용', true);
+    h += row('💎', '희망코인 충전', '보스 처치·이벤트 상자·방어전으로 무료로 모을 수 있어요', 'charge', '충전', true);
     document.getElementById('paneS').innerHTML = h;
   }
   if (tab === 1){
@@ -723,18 +767,22 @@ function updPanels(){
     let h = '<div class="hd">물건과 골드로 영웅을 만들어요 · 이미 있으면 ★이 올라가요</div>';
     for (const t of T){ const o = own[t], r = RECIPE[t], hasIt = craftItem(t) >= 0, hasG = gold >= r.gold;
       h += '<div class="row"><img class="pic' + (o.have ? '' : ' no') + '" src="../proto2d/img/' + heroKey(t, own[t].star) + '.png"><div class="tx">' + TYPES[t].who + (o.have ? ' <span class="st">' + '★'.repeat(o.star) + '</span>' : '');
-      h += '<div class="need"><img src="' + itemIcon(t, r.lv) + '"><span class="' + (hasIt ? 'ok' : 'ng') + '">' + TYPES[t].name + ' ' + r.lv + '단계 이상</span> + <span class="' + (hasG ? 'ok' : 'ng') + '">💰' + r.gold.toLocaleString() + '</span></div></div>';
+      h += '<div class="need"><img src="' + itemIcon(t, r.lv) + '"><span class="' + (hasIt ? 'ok' : 'ng') + '">' + TYPES[t].name + ' ' + r.lv + '단계 이상</span> + <span class="' + (hasG ? 'ok' : 'ng') + '">💰' + r.gold.toLocaleString() + '</span></div>' + (o.star < MAX_STAR ? '<small class="rate">성공 확률 ' + craftRate(t) + '% · 실패하면 재료는 사라지고 조각 +2</small>' : '') + '</div>';
       h += '<button data-a="craft" data-k="' + t + '"' + (canCraft(t) ? '' : ' disabled') + '>' + (o.have ? '★ 올리기' : '제작') + '</button></div>'; }
     document.getElementById('paneC').innerHTML = h;
   }
 }
 const bagCost = () => [800, 3000, 10000][(grid.length - 12)/4] || 0;
-const TICKET_COST = 1000;
+const TICKET_COST = 1000, PROTECT_COST = 5, BOOST_COST = 8;
 const packCost = () => Math.round(sumCost * 5 * 0.8);
 document.getElementById('paneS').onclick = e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return; const a = b.dataset.a;
   if (a === 'bag'){ const c = bagCost(); if (grid.length >= BAG_MAX || gold < c) return; gold -= c; for (let i=0;i<4;i++) grid.push(null); layout(); toast('가방이 ' + grid.length + '칸이 됐어요'); }
   else if (a === 'ticket'){ if (gold < TICKET_COST) return; gold -= TICKET_COST; tickets++; lastEnter = ''; toast('방어전 입장권 +1'); }
+  else if (a === 'protect'){ if (coin < PROTECT_COST) return; coin -= PROTECT_COST; inv.protect++; updCoin(); toast('파괴방지 주문서 +1 (보유 ' + inv.protect + '장)'); }
+  else if (a === 'boost'){ if (coin < BOOST_COST) return; coin -= BOOST_COST; inv.boost++; updCoin(); toast('랜덤 강화권 +1 (보유 ' + inv.boost + '장)'); }
+  else if (a === 'useboost'){ if (inv.boost <= 0) return; if (!grid.some(x => x && x.t !== 'stone' && x.lv < MAXLV)){ toast('강화할 진화 물건이 없어요'); return; } setUse('boost'); return; }
+  else if (a === 'charge'){ toast('실제 결제는 정식 출시 때 연결돼요'); return; }
   else if (a === 'pack'){ const c = packCost(); if (gold < c) return; if (grid.filter(x => !x).length < 5){ toast('빈 칸이 5개 필요해요'); return; }
     gold -= c; const lv = clamp(bestOf('stone')-3,1,7); for (let i=0;i<5;i++) put({t:'stone', lv}); sumCost = Math.round(sumCost*1.05+1); toast('돌 5개 획득!'); }
   goldShown = Math.min(goldShown, gold); updBtns(); sig = ''; updPanels();
@@ -743,7 +791,9 @@ document.getElementById('paneH').onclick = document.getElementById('paneC').oncl
   const b = e.target.closest('button'); if (!b) return; const t = b.dataset.k, a = b.dataset.a;
   if (a === 'eq'){ const i = equipped.indexOf(t); if (i >= 0) equipped.splice(i,1); else if (equipped.length >= MAX_EQ){ toast('장착은 ' + MAX_EQ + '명까지예요'); return; } else { equipped.push(t); toast(TYPES[t].who + ' 장착 · ' + PASSIVE[t].name + ' 발동!'); } sig = ''; updPanels(); }
   else if (a === 'piece'){ if (!canPiece(t)) return; own[t].pieces -= piecesNeed(t); gain(t); }
-  else if (a === 'craft'){ if (!canCraft(t)) return; const i = craftItem(t); grid[i] = null; gold -= RECIPE[t].gold; goldShown = Math.min(goldShown, gold); updBtns(); gain(t); }
+  else if (a === 'craft'){ if (!canCraft(t)) return; const i = craftItem(t), r = craftRate(t); grid[i] = null; gold -= RECIPE[t].gold; goldShown = Math.min(goldShown, gold); updBtns();
+    if (Math.random()*100 < r) gain(t);
+    else { own[t].pieces += 2; shake = 10; banner('제작 실패…', '성공 확률 ' + r + '% · 위로 보상으로 ' + TYPES[t].who + ' 조각 +2'); sig = ''; updPanels(); } }
 };
 setInterval(updPanels, 400);
 
@@ -803,11 +853,12 @@ function dFinish(win, quit){
   const g = Math.round(c * 40 * Math.pow(1.3, stageNo-1)) + (win ? Math.round(300 * Math.pow(1.3, stageNo-1)) : 0);
   const pc = Math.floor(c * 0.8) + (win ? 5 : 0);
   const got = {}; for (let i=0;i<pc;i++){ const t = Object.keys(TYPES)[Math.floor(Math.random()*5)]; got[t] = (got[t]||0) + 1; }
+  const hc = Math.floor(c/3) + (win ? 5 : 0); coin += hc; updCoin();
   gold += g; for (const t in got) own[t].pieces += got[t]; sig = ''; updPanels(); updBtns();
   document.getElementById('dResT').textContent = win ? '방어 성공!' : quit ? '방어 종료' : '성벽 붕괴!';
   document.getElementById('dResT').style.color = win ? '#ffe27a' : '#ff7a5a';
   document.getElementById('dResR').textContent = c + ' / ' + D_MAXR + ' 라운드 버팀';
-  document.getElementById('dResList').innerHTML = '<div>💰 골드 +' + fmt(g) + '</div>' + (pc ? Object.keys(got).map(t => '<div>◆ ' + TYPES[t].who + ' 조각 +' + got[t] + '</div>').join('') : '<div style="opacity:.6">영웅 조각 없음 (2라운드부터)</div>');
+  document.getElementById('dResList').innerHTML = '<div>💰 골드 +' + fmt(g) + '</div>' + (hc ? '<div>💎 희망코인 +' + hc + '</div>' : '') + (pc ? Object.keys(got).map(t => '<div>◆ ' + TYPES[t].who + ' 조각 +' + got[t] + '</div>').join('') : '<div style="opacity:.6">영웅 조각 없음 (2라운드부터)</div>');
   document.getElementById('dRes').classList.add('on');
 }
 function dSpawn(boss){
@@ -1005,6 +1056,8 @@ function dRender(dt){
 
 if (location.hash === '#evo'){ location.hash = '#test'; own.stone.star = 3; own.sword.star = 5; own.orb.star = 5; own.arrow.star = 3; own.egg.star = 5; }
 if (location.hash === '#test'){ gold = goldShown = 99999; for (const t in own){ own[t].have = true; own[t].star = own[t].star || 1; } equipped = ['orb','sword','egg']; tickets = 3; }
+if (location.hash === '#test') coin = 99;
+updCoin();
 if (location.hash === '#rare') RARE = 0.03;   // 희귀 돌 확인용 주소에서만 3%
 load().then(() => { const l = document.getElementById('load'); l.style.opacity = 0; setTimeout(()=>l.remove(),400); updTop(); updBtns(); requestAnimationFrame(t=>{ last=t; frame(t); }); });
 })();
