@@ -1636,12 +1636,12 @@ const PERKS = {
   draw:  { name:'좋은 돌 뽑기', icon:'🪨', max:5,   desc: l => '돌 뽑기 +' + l + '단계', cost: l => Math.round(15 * Math.pow(2, l)) },
   off:   { name:'긴 휴식',     icon:'🌙', max:8,   desc: l => '오프라인 보상 최대 ' + (8 + l) + '시간', cost: l => Math.round(10 * Math.pow(1.5, l)) },
 };
-const rebStones = st => st < REB_MIN ? 0 : Math.floor(Math.pow(st - 20, 1.15) * 0.8);
+const rebStones = st => st < REB_MIN ? 0 : Math.floor(Math.pow(st - 20, 1.15) * 1.2);
 function doRebirth(){
   const st = stageNo, gain = rebStones(st); if (gain <= 0) return;
   rb.stones += gain; rb.count++;
   stageNo = Math.min(1 + 2*rb.perk.start, Math.max(1, Math.floor(bestStage*0.6))); kills = 0; bossOn = false; mobs.length = 0; shots.length = 0; flames.length = 0;
-  coins.length = 0; drag = null; gold = goldShown = 100; sumCost = 20; for (let i=0;i<grid.length;i++) grid[i] = null; pendingRare.length = 0;
+  coins.length = 0; drag = null; gold = goldShown = 100; sumCost = 20; up.atk = up.crit = up.cdmg = up.gold = 0; atkLv = 1; upgSig = ''; for (let i=0;i<grid.length;i++) grid[i] = null; pendingRare.length = 0;
   heroHp = heroMax; updTop(); updBtns(); sig = ''; rankDirty = true; saveGame(); pushRank();
   document.getElementById('grow').classList.remove('on');
   banner('환생 ' + rb.count + '회!', '환생석 +' + gain + ' · ' + areaLabel(stageNo) + '부터 다시 시작');
@@ -1651,7 +1651,7 @@ let rebArm = false;
 function renderGrow(){
   const gain = rebStones(stageNo);
   let h = '<div class="gsec"><div class="gh">🔮 환생 <small>환생 ' + rb.count + '회 · 환생석 <b>' + rb.stones + '</b>개</small></div>';
-  h += '<div class="gdesc">' + REB_MIN + '스테이지 이상에서 환생하면 <b>스테이지 · 골드 · 가방 물건</b>이 처음으로 돌아가요.<br>영웅 · 별 · 조각 · 골드 강화 · 유물 · 희망코인은 그대로예요.</div>';
+  h += '<div class="gdesc">' + REB_MIN + '스테이지 이상에서 환생하면 <b>스테이지 · 골드 · 가방 물건 · 골드 강화</b>가 처음으로 돌아가요.<br>영웅 · 별 · 조각 · 유물 · 희망코인 · 환생석 능력은 그대로예요.<br>환생석은 <b>환생하는 순간의 스테이지</b>가 높을수록 많이 받아요.</div>';
   h += stageNo >= REB_MIN
     ? '<button class="gbig' + (rebArm ? ' warn' : '') + '" data-g="reb">' + (rebArm ? '정말 환생할까요? 한 번 더 누르면 환생!' : '지금 환생하기 · 환생석 +' + gain) + '</button>'
     : '<button class="gbig" disabled>' + REB_MIN + '스테이지부터 환생 가능 (지금 ' + stageNo + ')</button>';
