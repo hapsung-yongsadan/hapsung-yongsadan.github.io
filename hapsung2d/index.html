@@ -130,6 +130,35 @@
   .rel .ri{font-size:7cqw}
   .rel b{display:block;font-family:Jua;font-weight:400;font-size:3.2cqw;color:#fff}
   .rel small{font-size:2.6cqw;color:#cfe8ff}
+  #bChat{position:absolute;left:3%;top:22.4%;z-index:7;font-family:Jua;font-size:3.2cqw;color:#fff;background:linear-gradient(180deg,#1f6a5a,#0c3a30);border:1.5px solid #8affd8;border-radius:10px;padding:1cqw 2.6cqw}
+  #bChat i{position:absolute;top:-1cqw;right:-1cqw;width:2.8cqw;height:2.8cqw;border-radius:50%;background:#ff4d4d;box-shadow:0 0 6px #ff4d4d;display:none}
+  #bChat i.on{display:block}
+  .chatbox{height:78%}
+  #chatL{flex:1;overflow-y:auto;touch-action:pan-y;text-align:left;margin:2cqw 0;padding-right:1cqw}
+  .cm{background:rgba(0,0,0,.3);border-radius:10px;padding:1.6cqw 2.4cqw;margin-bottom:1.4cqw;max-width:86%}
+  .cm.me{margin-left:auto;background:rgba(122,84,32,.45);border:1px solid rgba(242,200,106,.4)}
+  .cm b{display:block;font-family:Jua;font-weight:400;font-size:3.3cqw;color:#ffd978}
+  .cm b small{font-family:'Noto Sans KR';font-size:2.4cqw;color:#bba887;margin-left:1.5cqw}
+  .cm span{font-size:3.5cqw;color:#f3e7cf;word-break:break-all;user-select:text;-webkit-user-select:text}
+  .crow{display:flex;gap:2cqw}
+  #chatIn{flex:1;font-family:'Noto Sans KR';font-size:max(16px,3.8cqw);padding:2cqw;border-radius:10px;border:2px solid #f2c86a;background:#120c08;color:#fff;user-select:text;-webkit-user-select:text;min-width:0}
+  #chatGo{font-family:Jua;font-size:4cqw;color:#fff;border:2px solid #f2c86a;border-radius:10px;padding:0 4cqw;background:linear-gradient(180deg,#8a5d22,#4a2f10)}
+  #skills{position:absolute;right:3%;top:49.6cqh;z-index:7;display:flex;gap:1.6cqw;align-items:flex-end}
+  body.def #skills{top:22cqh;right:3%;flex-direction:column;align-items:flex-end}
+  body.raid #skills{top:auto;bottom:11cqh}
+  .sk{position:relative;width:12.5cqw;height:12.5cqw;border-radius:50%;border:2px solid #f2c86a;background:#2a1c10;padding:0;overflow:hidden;
+    box-shadow:0 3px 0 #000,0 0 10px rgba(0,0,0,.6);--p:0%}
+  .sk img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;transform:scale(1.5);transform-origin:50% 15%}
+  .sk::after{content:"";position:absolute;inset:0;background:conic-gradient(rgba(0,0,0,.72) var(--p), transparent 0)}
+  .sk i{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-family:Jua;font-size:5cqw;color:#fff;text-shadow:0 2px 0 #000;z-index:2}
+  .sk span{position:absolute;left:-2cqw;right:-2cqw;bottom:-0.4cqw;font-family:Jua;font-size:2.2cqw;color:#fff;text-shadow:0 1px 0 #000,0 0 3px #000;z-index:3;white-space:nowrap}
+  .sk.ready{border-color:#fff27a;box-shadow:0 3px 0 #000,0 0 14px rgba(255,230,100,.9);animation:skp 1.2s infinite}
+  @keyframes skp{50%{box-shadow:0 3px 0 #000,0 0 22px rgba(255,230,100,1)}}
+  .sk.auto{width:10cqw;height:10cqw;border-radius:12px;border-color:#9fd4ff;background:linear-gradient(180deg,#2e4a6a,#14263a)}
+  .sk.auto.on{background:linear-gradient(180deg,#2e9a5a,#0f4a2a);border-color:#9dff9a}
+  .sk.auto b{font-family:Jua;font-weight:400;font-size:2.8cqw;color:#fff;line-height:1.1}
+  #skills.buffd .sk[data-sk]{outline:2px solid #ff8acf}
+  #skills.buffs .sk[data-sk]{outline:2px solid #c78bff}
   #bRank{position:absolute;left:3%;top:9%;z-index:7;font-family:Jua;font-size:3.4cqw;color:#fff;background:rgba(22,16,12,.85);border:1.5px solid rgba(242,200,106,.6);border-radius:10px;padding:1cqw 2.6cqw}
   .modal{position:absolute;inset:0;z-index:16;display:none;place-items:center;background:rgba(0,0,0,.7)}
   .modal.on{display:grid}
@@ -210,6 +239,10 @@
   <div class="modal" id="raidR"><div class="box"><div class="mh" id="rrT">레이드 종료!</div><p id="rrP">이번 도전 피해</p><div id="rrDmg"></div><p id="rrSub"></p><div id="rrList" class="list"></div><button id="rrOk" class="big">확인</button></div></div>
   <button id="bQ" class="idle">⚙ 효과 높음</button>
   <button id="bGrow" class="idle">🔮 환생 · 유물</button>
+  <button id="bChat" class="idle">💬 채팅<i id="chatDot"></i></button>
+  <div id="skills"></div>
+  <div class="modal" id="chat"><div class="box chatbox"><div class="mh">💬 채팅<button id="chatX">✕</button></div><div id="chatL"></div>
+    <div class="crow"><input id="chatIn" maxlength="60" placeholder="메시지 입력 (60자)" autocomplete="off"><button id="chatGo">보내기</button></div></div></div>
   <button id="bTower" class="idle">🗼 무한의 탑<small>보스 연속 도전</small></button>
   <div class="modal" id="grow"><div class="box"><div class="mh">🔮 환생 · 유물<button id="growX">✕</button></div><div id="growB"></div></div></div>
   <div class="modal" id="towerL"><div class="box"><div class="mh">🗼 무한의 탑<button id="twX">✕</button></div>
@@ -282,7 +315,7 @@ const SHIELD = { name:'방패', names:['나무 방패','가죽 방패','철 방�
 const IT = t => t === 'shield' ? SHIELD : TYPES[t];
 // 영웅이 실제로 쓰는 물건: 기사는 방패가 있으면 방패, 없으면 돌
 const heroItem = t => (t === 'stone' && bestOf('shield')) ? 'shield' : t;
-const guardPct = () => (20 + 5*PST('stone') + 2*bestOf('shield')) / 100;
+const guardPct = () => Math.min(0.75, (20 + 5*PST('stone') + 2*bestOf('shield')) / 100);
 for (const t in TYPES) Object.defineProperty(TYPES[t], 'who', { get: () => heroName(t, own[t] ? own[t].star : 1) });
 const HUE = [28, 200, 52, 280, 130, 0, 185, 310, 45, 330];
 const hue = lv => HUE[(lv-1)%10];
@@ -296,8 +329,8 @@ own.stone.have = true; own.stone.star = 1;
 let equipped = ['stone'];
 const MAX_EQ = 3, MAX_STAR = 5;
 // 영웅 별 보너스: 확률이 낮은 만큼 크게 오름
-const STAR_BONUS = [1.5, 2.2, 3.5, 6, 12];
-const starBonus = st => STAR_BONUS[clamp(st,1,5)-1];
+const STAR_BONUS = [1.5, 2.2, 3.5, 6, 12, 16, 22, 30, 42, 60];
+const starBonus = st => STAR_BONUS[clamp(st,1,10)-1];
 const bonus = t => equipped.includes(t) ? starBonus(own[t].star) : 1;
 // 영웅 패시브 (장착했을 때만, 별이 오를수록 강해짐)
 const has = t => equipped.includes(t);
@@ -487,7 +520,7 @@ function dmgOf(t, lv){ let base = t === 'stone' ? 22*Math.pow(1.6, lv-1) : 22*Ma
   if (t !== 'stone' && lv === MAXLV) base *= Math.pow(3, bestTr(t));
   const k = { stone:1, shield:1.1, orb:1.2, sword:1.0, arrow:0.45, egg:0.7 }[t]; return Math.round(base * k); }
 const CD = { stone:0.45, shield:0.9, orb:1.6, sword:1.0, arrow:0.7, egg:1.3 };
-function cdOf(t){ return CD[t] * spdMul(Math.min(20, atkLv-1)) * (1 - 0.02*rl(7)); }
+function cdOf(t){ return CD[t] * spdMul(Math.min(20, atkLv-1)) * (1 - 0.02*rl(7)) * spdBuff(); }
 
 // ---------- 몬스터 ----------
 // 사냥터 난이도와 보상: 스테이지마다 체력 ×1.55, 보상 ×1.5 (+보스 조각·코인도 늘어남)
@@ -527,7 +560,7 @@ function mobHeal(m, dt, list){ if (m.slot !== 3) return; m.healT = (m.healT ?? 3
   let any = false; for (const o of list) if (!o.dead && o !== m && o.hp < o.max && Math.hypot(o.x-m.x, o.y-m.y) < 220){ const h = Math.round(o.max*0.08); o.hp = Math.min(o.max, o.hp + h); num(o.x, o.y - o.h*0.9, h, false, '#7fff8a'); any = true; }
   if (any){ addFx({type:'img', k:'heal', x:m.x, y:m.y - m.h*0.5, s0:0.3, s1:0.8, life:.6, add:true, amax:0.6}); } }
 function hit(m, v, crit, col){
-  if (!m || m.dead) return; if (m.boss) v *= 1 + 0.1*rl(6); v = mobTakes(m, v);
+  if (!m || m.dead) return; v *= dmgBuff(); if (m.boss) v *= 1 + 0.1*rl(6); v = mobTakes(m, v);
   m.hp -= v; m.flash = 1; m.kb = crit ? 30 : 14; m.sq = 1;
   num(m.x, m.y - m.h*0.95, v, crit);
   if (crit){ shake = Math.max(shake, 9); hitStop = Math.max(hitStop, 0.04); burst(m.x, m.y-m.h*0.5, 8, col || '#ffe08a'); }
@@ -541,6 +574,7 @@ function die(m){
   if (mode !== 'idle' || coins.length > [12,24,40][Q]){ gold += n*val; btnDirty = true; } else for (let i=0;i<n;i++) coins.push({x:m.x+rnd(-20,20), y:m.y-m.h*0.4, vx:rnd(-240,240), vy:rnd(-600,-380), land:m.y+rnd(-10,20), phase:0, t:0, val});
   if (m.boss){ shake = 30; hitStop = 0.12; bossOn = false; kills = 0; const relA = areaIdx(stageNo); stageNo++; heroHp = heroMax;
     if (Math.random() < 0.04) setTimeout(() => giveRelic(relA, '보스 처치'), 900);
+    if (Math.random() < 0.12) giveAwk(1, '보스 처치');
     const t = Object.keys(TYPES)[Math.floor(Math.random()*5)], n = 3 + Math.floor(Math.random()*3) + Math.floor((stageNo-1)/3); givePieces(t, n, '보스 보상'); addCoin(1 + Math.floor(stageNo/5));
     for (let i=0;i<n;i++) pieceFx.push({ t, x:m.x+rnd(-30,30), y:m.y-m.h*0.5, vx:rnd(-200,200), vy:rnd(-500,-300), k:0, delay:i*0.08 }); }
   else if (!bossOn) kills++;
@@ -612,7 +646,7 @@ function summon(free){
   put({ t:'stone', lv: Math.random() < 0.12 ? base+1 : base }); updBtns();
 }
 // ---------- 희망코인 · 소모 아이템 · 확률 ----------
-let coin = 10; const inv = { protect:0, boost:0 }; let useMode = null;
+let coin = 10; const inv = { protect:0, boost:0, awk:0 }; let useMode = null;
 // 진화 물건(구슬·무기·화살·정령 알) 합성 성공 확률: 목표 단계별 %
 const MERGE_RATE = { 2:80, 3:70, 4:60, 5:50, 6:40, 7:30, 8:20, 9:10, 10:5 };
 // 영웅 제작 성공 확률: 처음 얻기 / ★2 / ★3 / ★4 / ★5
@@ -769,7 +803,7 @@ function drawHero(hr, dt){
   if (bestOf(hi)) drawItem(hi, lv, hr.x + 46, hr.y - hr.h*0.95, 18, 0);
   // 별
   cx.save(); cx.font = '400 20px Jua'; cx.textAlign='center'; cx.lineWidth=5; cx.strokeStyle='#000'; cx.lineJoin='round';
-  const st = own[hr.t].star >= 4 ? '★' + own[hr.t].star : '★'.repeat(own[hr.t].star); cx.strokeText(st, hr.x, hr.y + 26); cx.fillStyle = '#ffd040'; cx.fillText(st, hr.x, hr.y + 26); cx.restore();
+  const st = own[hr.t].star >= 4 ? '★' + own[hr.t].star : '★'.repeat(own[hr.t].star); cx.strokeText(st, hr.x, hr.y + 26); cx.fillStyle = own[hr.t].star > 5 ? '#ff8aff' : '#ffd040'; cx.fillText(st, hr.x, hr.y + 26); cx.restore();
 }
 // 이벤트 상자
 let chest = null, chestT = 15;
@@ -962,8 +996,8 @@ function updPanels(){
   const T = Object.keys(TYPES);
   document.getElementById('dotH').classList.toggle('on', T.some(canPiece));
   document.getElementById('dotC').classList.toggle('on', T.some(canCraft));
-  const ns = tab + '|' + T.map(t => [own[t].have, own[t].star, own[t].pieces, equipped.indexOf(t), canCraft(t), craftItem(t) >= 0].join(',')).join(';');
-  const shopSig = [grid.length, tickets, gold >= bagCost(), gold >= TICKET_COST, gold >= packCost(), coin, inv.protect, inv.boost].join(',');
+  const ns = (inv.awk||0) + '|' + tab + '|' + T.map(t => [own[t].have, own[t].star, own[t].pieces, equipped.indexOf(t), canCraft(t), craftItem(t) >= 0].join(',')).join(';');
+  const shopSig = [inv.awk, grid.length, tickets, gold >= bagCost(), gold >= TICKET_COST, gold >= packCost(), coin, inv.protect, inv.boost].join(',');
   if (ns + shopSig === sig) return; sig = ns + shopSig;
   if (tab === 3){
     const row = (img, name, desc, a, label, ok) => '<div class="row"><div class="pic ic">' + img + '</div><div class="tx">' + name + '<small>' + desc + '</small></div><button data-a="' + a + '"' + (ok ? '' : ' disabled') + '>' + label + '</button></div>';
@@ -973,6 +1007,7 @@ function updPanels(){
     h += row('⚔', '방어전 입장권 +1', '지금 ' + tickets + '장 (자동 충전은 ' + TICKET_MAX + '장까지)', 'ticket', '💰' + fmt(TICKET_COST), gold >= TICKET_COST);
     h += row('<img src="' + itemIcon('stone', clamp(bestOf('stone')-3,1,7)) + '">', '돌 꾸러미', clamp(bestOf('stone')-3,1,7) + '단계 돌 5개 (뽑기보다 20% 싸요)', 'pack', '💰' + fmt(packCost()), gold >= packCost());
     h += '<div class="hd" style="margin-top:3cqw">💎 희망코인 상점 · 보유 ' + coin + '개</div>';
+    h += row('🔷', '각성석', '★5 영웅을 ★6~★10으로 각성시켜요 · 보유 ' + (inv.awk||0) + '개', 'awkbuy', '💎 15', coin >= 15);
     h += row('🛡', '파괴방지 주문서', '진화 물건 합성이 실패해도 부서지지 않아요 (자동 사용) · 보유 ' + inv.protect + '장', 'protect', '💎 ' + PROTECT_COST, coin >= PROTECT_COST);
     h += row('✨', '랜덤 강화권 (0~3)', '진화 물건 하나를 0~3단계 올려줘요 · 보유 ' + inv.boost + '장', 'boost', '💎 ' + BOOST_COST, coin >= BOOST_COST);
     if (inv.boost > 0) h += row('✨', '랜덤 강화권 사용하기', '+0: 30% · +1: 40% · +2: 20% · +3: 10%', 'useboost', '사용', true);
@@ -989,7 +1024,9 @@ function updPanels(){
       h += '<small>' + TYPES[t].name + ' 피해 ×' + (o.have ? starBonus(o.star).toFixed(1) : '1.5') + (eq ? ' (적용 중)' : '') + '<br><span style="color:' + (eq ? '#9dff9a' : '#b8a88a') + '">패시브 · ' + PASSIVE[t].name + ': ' + PASSIVE[t].desc(Math.max(1,o.star)) + '</span></small>';
       h += '<div class="bar"><b style="width:' + Math.min(100, o.pieces/need*100) + '%"></b></div><small>조각 ' + o.pieces + ' / ' + need + (o.star >= MAX_STAR ? ' · 최고 등급' : o.have && o.star < 5 ? ' · ' + (o.star < 3 ? '★3' : '★5') + '에 ' + EVO[t][evoIdx(o.star)+1].n + '(으)로 진화' : '') + (o.star < MAX_STAR ? '<br><span class="rate">' + (o.have ? '★' + (o.star+1) : '획득') + ' 성공 확률 ' + craftRate(t) + '% · 실패하면 조각 절반 소멸</span>' : '') + '</small></div>';
       if (canPiece(t)) h += '<button data-a="piece" data-k="' + t + '">' + (o.have ? '★ 올리기' : '얻기') + '<br><small>' + craftRate(t) + '%</small></button>';
-      else if (o.have) h += '<button class="blue" data-a="eq" data-k="' + t + '">' + (eq ? '해제' : '장착') + '</button>';
+      else if (o.have){
+        if (o.star >= 5 && o.star < AWK_MAX) h += '<button data-a="awk" data-k="' + t + '" style="background:linear-gradient(180deg,#9a2a9a,#4a0c5a);border-color:#ff9aff">각성 ★' + (o.star+1) + '<br><small>' + AWK_RATE[o.star+1] + '% · ' + (inv.awk||0) + '/' + AWK_COST[o.star+1] + '</small></button>';
+        h += '<button class="blue" data-a="eq" data-k="' + t + '">' + (eq ? '해제' : '장착') + '</button>'; }
       h += '</div>'; }
     document.getElementById('paneH').innerHTML = h;
   }
@@ -1009,6 +1046,7 @@ document.getElementById('paneS').onclick = e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return; const a = b.dataset.a;
   if (a === 'bag'){ const c = bagCost(); if (grid.length >= BAG_MAX || gold < c) return; gold -= c; for (let i=0;i<4;i++) grid.push(null); layout(); toast('가방이 ' + grid.length + '칸이 됐어요'); }
   else if (a === 'ticket'){ if (gold < TICKET_COST) return; gold -= TICKET_COST; tickets++; lastEnter = ''; toast('방어전 입장권 +1'); }
+  else if (a === 'awkbuy'){ if (coin < 15) return; coin -= 15; giveAwk(1); updCoin(); toast('각성석 +1 (보유 ' + inv.awk + '개)'); }
   else if (a === 'protect'){ if (coin < PROTECT_COST) return; coin -= PROTECT_COST; inv.protect++; updCoin(); toast('파괴방지 주문서 +1 (보유 ' + inv.protect + '장)'); }
   else if (a === 'boost'){ if (coin < BOOST_COST) return; coin -= BOOST_COST; inv.boost++; updCoin(); toast('랜덤 강화권 +1 (보유 ' + inv.boost + '장)'); }
   else if (a === 'useboost'){ if (inv.boost <= 0) return; if (!grid.some(x => x && x.t !== 'stone' && x.lv < MAXLV)){ toast('강화할 진화 물건이 없어요'); return; } setUse('boost'); return; }
@@ -1022,6 +1060,7 @@ document.getElementById('paneS').onclick = e => {
 document.getElementById('paneH').onclick = document.getElementById('paneC').onclick = e => {
   const b = e.target.closest('button'); if (!b) return; const t = b.dataset.k, a = b.dataset.a;
   if (a === 'eq'){ const i = equipped.indexOf(t); if (i >= 0) equipped.splice(i,1); else if (equipped.length >= MAX_EQ){ toast('장착은 ' + MAX_EQ + '명까지예요'); return; } else { equipped.push(t); toast(TYPES[t].who + ' 장착 · ' + PASSIVE[t].name + ' 발동!'); } sig = ''; updPanels(); }
+  else if (a === 'awk'){ tryAwaken(t); return; }
   else if (a === 'piece'){ if (!canPiece(t)) return; const need = piecesNeed(t), r = craftRate(t);
     if (Math.random()*100 < r){ own[t].pieces -= need; gain(t); }
     else { const lost = Math.ceil(need/2); own[t].pieces -= lost; shake = 10; banner('승급 실패…', '성공 확률 ' + r + '% · 조각 ' + lost + '개 소멸 (' + own[t].pieces + '개 남음)'); sig = ''; updPanels(); } }
@@ -1109,12 +1148,12 @@ function dFinish(win, quit){
   const g = Math.round(c * 40 * rewardMul()) + (win ? Math.round(300 * rewardMul()) : 0);
   const pc = Math.floor(c * 0.8) + (win ? 5 : 0);
   const got = {}; for (let i=0;i<pc;i++){ const t = Object.keys(TYPES)[Math.floor(Math.random()*5)]; got[t] = (got[t]||0) + 1; }
-  const hc = Math.floor(c/3) + (win ? 5 : 0); coin += hc; updCoin();
+  const hc = Math.floor(c/3) + (win ? 5 : 0); coin += hc; updCoin(); const ak = Math.floor(c/3) + (win ? 3 : 0); giveAwk(ak);
   gold += g; for (const t in got) own[t].pieces += got[t]; sig = ''; updPanels(); updBtns();
   document.getElementById('dResT').textContent = win ? '방어 성공!' : quit ? '방어 종료' : '성벽 붕괴!';
   document.getElementById('dResT').style.color = win ? '#ffe27a' : '#ff7a5a';
   document.getElementById('dResR').textContent = c + ' / ' + D_MAXR + ' 라운드 버팀';
-  document.getElementById('dResList').innerHTML = '<div>💰 골드 +' + fmt(g) + '</div>' + (hc ? '<div>💎 희망코인 +' + hc + '</div>' : '') + (pc ? Object.keys(got).map(t => '<div>◆ ' + TYPES[t].who + ' 조각 +' + got[t] + '</div>').join('') : '<div style="opacity:.6">영웅 조각 없음 (2라운드부터)</div>');
+  document.getElementById('dResList').innerHTML = '<div>💰 골드 +' + fmt(g) + '</div>' + (hc ? '<div>💎 희망코인 +' + hc + '</div>' : '') + (ak ? '<div>🔷 각성석 +' + ak + '</div>' : '') + (pc ? Object.keys(got).map(t => '<div>◆ ' + TYPES[t].who + ' 조각 +' + got[t] + '</div>').join('') : '<div style="opacity:.6">영웅 조각 없음 (2라운드부터)</div>');
   document.getElementById('dRes').classList.add('on');
 }
 function dSpawn(boss){
@@ -1124,7 +1163,7 @@ function dSpawn(boss){
   m.hp = m.max = boss ? dMobHp(D.round)*25 : dMobHp(D.round); mobMods(m); m.stopY = DWALL - rnd(0,34); D.mobs.push(m); return m; }
 function dTarget(x){ let b=null, bs=-1e9; for (const m of D.mobs){ if (m.dead || m.y < 60) continue; const s = m.y*2 - Math.abs(m.x-x)*0.6; if (s > bs){ bs = s; b = m; } } return b; }
 function dHit(m, v, crit, col){
-  if (!m || m.dead) return; v = mobTakes(m, v); m.hp -= v; m.flash = 1; m.kb = crit ? 24 : 10; m.sq = 1; num(m.x, m.y - m.h*0.95, v, crit);
+  if (!m || m.dead) return; v *= dmgBuff(); v = mobTakes(m, v); m.hp -= v; m.flash = 1; m.kb = crit ? 24 : 10; m.sq = 1; num(m.x, m.y - m.h*0.95, v, crit);
   if (crit){ shake = Math.max(shake, 8); hitStop = Math.max(hitStop, 0.035); burst(m.x, m.y-m.h*0.5, 8, col || '#ffe08a'); }
   if (m.hp <= 0){ m.dead = 0.001; addFx({type:'img', k:'boom', x:m.x, y:m.y-m.h*0.45, s0:m.boss?1.2:0.4, s1:m.boss?2.4:0.85, life:.42, add:true});
     burst(m.x, m.y-m.h*0.45, m.boss?30:10, m.boss?'#ffcf5a':'#c8ff9a'); D.gold += m.boss ? 40 : 3 + Math.floor(D.round/2); if (m.boss){ shake = 28; hitStop = 0.1; } }
@@ -1293,9 +1332,9 @@ function dUpdate(dt){
     else { document.getElementById('dGoC').textContent = '전투 중';
       D.spawnT -= dt; if (D.toSpawn > 0 && D.spawnT <= 0){ dSpawn(false); D.toSpawn--; D.spawnT = rnd(0.35,0.8) * Math.max(0.5, 1 - D.round*0.04); }
       if (D.toSpawn === 0 && !D.mobs.some(m=>!m.dead)) dEndRound(); }
-    (D.cmds || []).forEach((u,k) => { if (u.act){ u.act.t += dt; if (u.act.t >= u.act.dur) u.act = null; } u.timer -= dt; if (u.timer <= 0) u.timer = dAct(100+k, u) ? DCD[u.t] * Math.pow(0.92, u.star-1) * rnd(0.9,1.1) : 0.2; });
+    (D.cmds || []).forEach((u,k) => { if (u.act){ u.act.t += dt; if (u.act.t >= u.act.dur) u.act = null; } u.timer -= dt; if (u.timer <= 0) u.timer = dAct(100+k, u) ? DCD[u.t] * Math.pow(0.92, u.star-1) * spdBuff() * rnd(0.9,1.1) : 0.2; });
     D.slots.forEach((u,i) => { if (!u) return; if (u.act){ u.act.t += dt; if (u.act.t >= u.act.dur) u.act = null; } if (D.drag && D.drag.i === i) return;
-      u.timer -= dt; if (u.timer <= 0) u.timer = dAct(i, u) ? DCD[u.t] * Math.pow(0.92, u.star-1) * rnd(0.9,1.1) : 0.2; });
+      u.timer -= dt; if (u.timer <= 0) u.timer = dAct(i, u) ? DCD[u.t] * Math.pow(0.92, u.star-1) * spdBuff() * rnd(0.9,1.1) : 0.2; });
     dUpdShots(dt);
     updMeteors(D.flames, dt, D.mobs, dHit);
     for (const m of D.mobs){ m.phase += dt*4; m.flash = Math.max(0,m.flash-dt*7); m.sq = Math.max(0,m.sq-dt*5); m.kb = Math.max(0,m.kb-dt*120);
@@ -1330,7 +1369,7 @@ let pid = '', nick = '', bestStage = 1, rankDirty = true;
 const lsGet = k => { try { return localStorage.getItem(k); } catch(e){ return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e){} };
 function snapshot(){ return { v:1, gold, coin, stageNo, bestStage, sumCost, atkLv, atkCost, grid: grid.map(x => x ? [x.t, x.lv, x.tr||0] : 0), own, equipped, inv, tickets, ticketT,
-  pendingRare, pid, nick, usedCodes, up, raid: raidSave, stats, rb, relics, tower, lastSeen: Date.now() }; }
+  pendingRare, pid, nick, usedCodes, up, raid: raidSave, stats, rb, relics, tower, skAuto, lastSeen: Date.now() }; }
 function saveGame(){ if (IS_TEST || !pid) return; lsSet(SAVE_KEY, JSON.stringify(snapshot())); }
 function loadGame(){
   let d = null; try { d = JSON.parse(lsGet(SAVE_KEY) || 'null'); } catch(e){}
@@ -1341,7 +1380,7 @@ function loadGame(){
   equipped = (d.equipped || ['stone']).filter(t => own[t] && own[t].have);
   Object.assign(inv, d.inv || {}); tickets = d.tickets ?? 2; ticketT = d.ticketT ?? TICKET_TIME;
   pendingRare.length = 0; (d.pendingRare || []).forEach(v => pendingRare.push(v));
-  pid = d.pid || ''; nick = d.nick || ''; usedCodes = d.usedCodes || []; if (d.up) Object.assign(up, d.up); if (d.raid) Object.assign(raidSave, d.raid); if (d.stats) Object.assign(stats, d.stats); if (d.rb){ rb.count = d.rb.count||0; rb.stones = d.rb.stones||0; Object.assign(rb.perk, d.rb.perk||{}); } if (d.relics) relics = d.relics.slice(0,10).concat(new Array(10).fill(0)).slice(0,10); if (d.tower) Object.assign(tower, d.tower); atkLv = Math.min(atkLv, 21);
+  pid = d.pid || ''; nick = d.nick || ''; usedCodes = d.usedCodes || []; if (d.up) Object.assign(up, d.up); if (d.raid) Object.assign(raidSave, d.raid); if (d.stats) Object.assign(stats, d.stats); if (d.rb){ rb.count = d.rb.count||0; rb.stones = d.rb.stones||0; Object.assign(rb.perk, d.rb.perk||{}); } if (d.relics) relics = d.relics.slice(0,10).concat(new Array(10).fill(0)).slice(0,10); if (d.tower) Object.assign(tower, d.tower); skAuto = !!d.skAuto; atkLv = Math.min(atkLv, 21);
   return d;
 }
 // 자리를 비운 동안: 지금 스테이지 기준 초당 0.25마리 사냥으로 계산, 최대 8시간
@@ -1522,7 +1561,7 @@ function startRaid(kind){
 }
 const raidBoss = { x: W/2, y: 760, h: 520 };
 function raidHit(v, crit, x, y){
-  v *= 1 + 0.1*rl(6); if (R.shield > 0) v *= 0.2; if (R.weak) v *= 2;
+  v *= (1 + 0.1*rl(6)) * dmgBuff(); if (R.shield > 0) v *= 0.2; if (R.weak) v *= 2;
   v = Math.round(v); R.total += v; R.bossFlash = Math.min(1, R.bossFlash + 0.5); R.sq = 1;
   num(x + rnd(-60,60), y + rnd(-40,20), v, crit, R.shield > 0 ? '#9fd4ff' : null);
   if (crit){ shake = Math.max(shake, 8); burst(x, y, 8, '#ffe08a'); }
@@ -1561,11 +1600,11 @@ function endRaid(){
   R.over = true; R.shots.length = 0; const dmg = R.total;
   raidSave.dmg += dmg; raidSave.best = Math.max(raidSave.best, dmg);
   const g = Math.round(300 * rewardMul() * goldMul()), pc = 1 + Math.floor(Math.random()*3), pt = Object.keys(TYPES)[Math.floor(Math.random()*5)];
-  gold += g; own[pt].pieces += pc; coin += 1; updCoin(); updBtns(); sig = ''; saveGame(); raidPush();
+  gold += g; own[pt].pieces += pc; coin += 1; giveAwk(2); updCoin(); updBtns(); sig = ''; saveGame(); raidPush();
   if (Math.random() < 0.15) setTimeout(() => giveRelic(raidBossIdx(raidWeek()), '주간 레이드'), 800);
   document.getElementById('rrDmg').textContent = fmt(Math.round(dmg));
   document.getElementById('rrSub').textContent = '이번 주 누적 ' + fmt(Math.round(raidSave.dmg)) + ' · 남은 도전 ' + raidSave.left + '번';
-  document.getElementById('rrList').innerHTML = '<div>💰 골드 +' + fmt(g) + '</div><div>◆ ' + TYPES[pt].who + ' 조각 +' + pc + '</div><div>💎 희망코인 +1</div>';
+  document.getElementById('rrList').innerHTML = '<div>💰 골드 +' + fmt(g) + '</div><div>◆ ' + TYPES[pt].who + ' 조각 +' + pc + '</div><div>💎 희망코인 +1</div><div>🔷 각성석 +2</div>';
   document.getElementById('raidR').classList.add('on');
 }
 document.getElementById('rrOk').onclick = () => { document.getElementById('raidR').classList.remove('on'); const k = R.kind; R.on = false; FXS.raid.fx.length = FXS.raid.nums.length = 0; useScene('idle'); setView('idle'); if (k === 'tower') openTower(); else openRaid(); };
@@ -1706,7 +1745,7 @@ document.getElementById('twGo').onclick = () => { towerFix(); if (tower.left <= 
 function endTower(win){
   R.over = true; R.shots.length = 0; const f = R.floor; let list = '';
   if (win){
-    tower.left++; tower.best = Math.max(tower.best, f); rankDirty = true;
+    tower.left++; tower.best = Math.max(tower.best, f); rankDirty = true; const ak = f % 5 === 0 ? 3 : 1; giveAwk(ak); list += '<div>🔷 각성석 +' + ak + '</div>';
     const g = Math.round(60 * Math.pow(1.5, 2*f - 1) * goldMul()); gold += g; list += '<div>💰 골드 +' + fmt(g) + '</div>';
     if (f % 5 === 0){ const pt = Object.keys(TYPES)[Math.floor(Math.random()*5)]; own[pt].pieces += 3; coin += 2; list += '<div>◆ ' + TYPES[pt].who + ' 조각 +3</div><div>💎 희망코인 +2</div>'; }
     if (f % 10 === 0){ setTimeout(() => giveRelic(towerBoss(f), '무한의 탑'), 600); list += '<div>📜 ' + RELICS[towerBoss(f)].name + '</div>'; }
@@ -1720,13 +1759,130 @@ function endTower(win){
   document.getElementById('raidR').classList.add('on');
 }
 
+
+// ======================= 필살기 (직접 누르기 + 자동) =======================
+const SKILLS = {
+  stone: { name:'방패 돌진',   cd:30, desc:'화면의 모든 적에게 큰 피해 + 밀쳐내기' },
+  sword: { name:'그림자 난무', cd:40, desc:'5초 동안 모든 공격 속도 3배' },
+  orb:   { name:'대유성',     cd:45, desc:'별똥별 10개가 쏟아짐' },
+  arrow: { name:'화살비',     cd:35, desc:'2초 동안 모든 적에게 화살 10연타' },
+  egg:   { name:'꽃의 축복',   cd:60, desc:'10초 동안 모든 피해 2배 + 체력·성벽 회복' },
+};
+const skCd = t => SKILLS[t].cd * (1 - 0.05 * Math.max(0, own[t].star - 5));
+const skReady = {}; let skAuto = false;
+const buff = { spd:0, dmg:0 };
+const nowMs = () => performance.now();
+function dmgBuff(){ return nowMs() < buff.dmg ? 2 : 1; }
+function spdBuff(){ return nowMs() < buff.spd ? 1/3 : 1; }
+function skBase(t){ const it = heroItem(t); return dmgOf(it, bestOf(it) || 1) * bonus(t) * atkMul(up.atk); }
+function skCtx(){
+  if (mode === 'raid' && R.on && !R.over) return { k:'raid' };
+  if (mode === 'def' && defOn && !D.over) return { k:'def', list:D.mobs, hit:dHit, scene:'def' };
+  return { k:'idle', list:mobs, hit, scene:'idle' };
+}
+function skHasTarget(c){ if (c.k === 'raid') return true; if (c.k === 'def' && D.phase !== 'fight') return false; return c.list.some(m => !m.dead && m.x < W + 80 && m.y > 40); }
+function fireSkill(t, auto){
+  if (!equipped.includes(t)) return false;
+  const c = skCtx(), now = nowMs(); if ((skReady[t] || 0) > now) return false;
+  if (!skHasTarget(c) && t !== 'egg'){ if (!auto) toast('공격할 적이 없어요'); return false; }
+  skReady[t] = now + skCd(t)*1000;
+  const base = skBase(t), sc = c.scene || 'raid', within = fn => () => { const ps = scene; useScene(sc); try { fn(); } finally { useScene(ps); } };
+  const alive = () => c.list ? c.list.filter(m => !m.dead && m.x < W + 80 && m.y > 40) : [];
+  callout(W/2, 330, SKILLS[t].name + '!', '#ffe27a'); shake = Math.max(shake, 14);
+  if (t === 'stone'){
+    if (c.k === 'raid'){ raidHit(base*24, true, raidBoss.x, raidBoss.y - raidBoss.h*0.5); addFx({type:'img', k:'shock', x:raidBoss.x, y:raidBoss.y-260, s0:0.4, s1:1.6, life:.4, add:true}); }
+    else for (const m of alive()){ addFx({type:'img', k:'shock', x:m.x, y:m.y-m.h*0.5, s0:0.2, s1:0.8, life:.35, add:true}); c.hit(m, base*8, true, '#bfe6ff'); if (!m.dead){ if (c.k === 'def') m.y = Math.max(100, m.y - 140); else m.x = Math.min(W + 60, m.x + 170); m.kb = 40; } }
+  } else if (t === 'sword'){ buff.spd = now + 5000; banner('그림자 난무!', '5초 동안 공격 속도 3배');
+  } else if (t === 'orb'){
+    for (let i=0;i<10;i++) setTimeout(within(() => {
+      let x, y; if (c.k === 'raid'){ x = raidBoss.x + rnd(-180,180); y = raidBoss.y - rnd(80,420); } else if (c.k === 'def'){ x = rnd(60, W-60); y = rnd(240, 800); } else { x = rnd(380, 690); y = rnd(440, 740); }
+      addFx({type:'img', k:'boom', x, y:y-20, s0:0.3, s1:1.0, life:.4, add:true}); addFx({type:'img', k:'star', x, y:y-40, s0:0.2, s1:0.8, life:.4, add:true}); shake = Math.max(shake, 8);
+      if (c.k === 'raid') raidHit(base*4, false, x, y); else for (const m of alive()) if (Math.hypot(m.x-x, (m.y-y)*1.4) < 140) c.hit(m, base*4, false, '#cfe0ff');
+    }), 120 + i*110);
+  } else if (t === 'arrow'){
+    for (let i=0;i<10;i++) setTimeout(within(() => {
+      if (c.k === 'raid'){ raidHit(base*4.5, false, raidBoss.x + rnd(-150,150), raidBoss.y - rnd(100,400)); return; }
+      for (const m of alive()){ addFx({type:'img', k:'shock', x:m.x + rnd(-20,20), y:m.y - m.h*rnd(0.3,0.8), s0:0.05, s1:0.3, life:.18, add:true}); c.hit(m, base*1.2, false, '#c8ff9a'); }
+    }), i*200);
+  } else if (t === 'egg'){
+    buff.dmg = now + 10000; heroHp = heroMax; if (defOn && !D.over) D.wall = Math.min(D.wallMax, D.wall + D.wallMax*0.3);
+    addFx({type:'img', k:'heal', x:W/2, y:600, s0:0.6, s1:1.8, life:1, add:true, amax:.6}); banner('꽃의 축복!', '10초 동안 모든 피해 2배');
+  }
+  saveGame(); return true;
+}
+// 스킬 버튼
+function buildSkillBar(){
+  const bar = document.getElementById('skills'); let h = '';
+  equipped.forEach(t => { h += '<button class="sk" data-sk="' + t + '"><img src="../proto2d/img/' + heroKey(t, own[t].star) + '.png"><i></i><span>' + SKILLS[t].name + '</span></button>'; });
+  h += '<button class="sk auto' + (skAuto ? ' on' : '') + '" data-auto="1"><b>' + (skAuto ? '자동<br>ON' : '자동<br>OFF') + '</b></button>';
+  bar.innerHTML = h; skSig = equipped.join() + skAuto + equipped.map(t => own[t].star).join();
+}
+let skSig = '';
+document.getElementById('skills').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.auto){ skAuto = !skAuto; toast('자동 스킬 ' + (skAuto ? '켜짐' : '꺼짐')); saveGame(); buildSkillBar(); return; }
+  fireSkill(b.dataset.sk, false); });
+setInterval(() => {
+  const sg = equipped.join() + skAuto + equipped.map(t => own[t].star).join(); if (sg !== skSig) buildSkillBar();
+  const now = nowMs();
+  document.querySelectorAll('#skills .sk[data-sk]').forEach(b => { const t = b.dataset.sk, left = Math.max(0, (skReady[t] || 0) - now) / 1000, tot = skCd(t);
+    b.style.setProperty('--p', (left > 0 ? left / tot * 100 : 0) + '%'); b.querySelector('i').textContent = left > 0 ? Math.ceil(left) : ''; b.classList.toggle('ready', left <= 0); });
+  if (skAuto){ const c = skCtx(); if (skHasTarget(c)) for (const t of equipped) if ((skReady[t] || 0) <= now){ if (fireSkill(t, true)) break; } }
+  document.getElementById('skills').classList.toggle('buffd', now < buff.dmg); document.getElementById('skills').classList.toggle('buffs', now < buff.spd);
+}, 250);
+
+// ======================= 영웅 각성 (★6 ~ ★10) =======================
+const AWK_MAX = 10, AWK_COST = { 6:5, 7:10, 8:20, 9:35, 10:60 }, AWK_RATE = { 6:30, 7:20, 8:12, 9:6, 10:3 };
+function giveAwk(n, src){ inv.awk = (inv.awk || 0) + n; sig = ''; if (src) toast(src + ': 각성석 +' + n); }
+function tryAwaken(t){
+  const o = own[t], n = o.star + 1; if (!o.have || o.star < 5 || o.star >= AWK_MAX) return;
+  const need = AWK_COST[n], r = AWK_RATE[n]; if ((inv.awk || 0) < need){ toast('각성석이 부족해요 (' + (inv.awk||0) + ' / ' + need + ')'); return; }
+  if (Math.random()*100 < r){ inv.awk -= need; o.star = n; evoFx(t); shake = 22; banner('각성 ★' + n + '!', heroName(t, n) + ' · 피해 ×' + starBonus(n) + ' · 필살기 대기 -' + (5*(n-5)) + '%'); }
+  else { const lost = Math.ceil(need/2); inv.awk -= lost; shake = 10; banner('각성 실패…', '성공 확률 ' + r + '% · 각성석 ' + lost + '개 소멸'); }
+  sig = ''; updPanels(); saveGame();
+}
+
+// ======================= 채팅 =======================
+let chatOpen = false, chatLast = 0, chatSeen = 0, chatSendT = 0;
+async function loadChat(){
+  try {
+    const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_chat'}], orderBy:[{field:{fieldPath:'ts'}, direction:'DESCENDING'}], limit:50 } }) });
+    const arr = await r.json(); if (!r.ok) throw new Error(lastNetErr);
+    const rows = arr.filter(e => e.document).map(e => { const f = e.document.fields; return { uid: f.uid?.stringValue, nick: f.nick?.stringValue || '???', text: f.text?.stringValue || '', ts: +(f.ts?.integerValue || 0), best: +(f.best?.integerValue || 0) }; }).reverse();
+    chatLast = rows.length ? rows[rows.length-1].ts : 0;
+    document.getElementById('chatDot').classList.toggle('on', !chatOpen && chatLast > chatSeen);
+    if (!chatOpen) return;
+    chatSeen = chatLast; try { localStorage.setItem('h2d_chatSeen', String(chatSeen)); } catch(e){}
+    const list = document.getElementById('chatL'), atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 30;
+    list.innerHTML = rows.length ? rows.map(o => '<div class="cm' + (o.uid === pid ? ' me' : '') + '"><b>' + esc(o.nick) + '<small>' + (o.best ? areaLabel(o.best) : '') + ' · ' + new Date(o.ts).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Seoul'}) + '</small></b><span>' + esc(o.text) + '</span></div>').join('')
+      : '<div class="rk-msg">첫 인사를 남겨보세요!</div>';
+    if (atBottom || list.dataset.first !== '1'){ list.scrollTop = list.scrollHeight; list.dataset.first = '1'; }
+  } catch(e){ if (chatOpen) document.getElementById('chatL').innerHTML = '<div class="rk-msg">채팅 서버에 연결하지 못했어요<br><small style="opacity:.6">' + esc(lastNetErr) + '</small></div>'; }
+}
+async function sendChat(){
+  const inp = document.getElementById('chatIn'), text = inp.value.trim();
+  if (!text) return; if (!nick){ toast('닉네임을 먼저 정해주세요'); return; }
+  if (Date.now() - chatSendT < 3000){ toast('조금만 천천히 보내주세요'); return; }
+  chatSendT = Date.now(); inp.value = '';
+  try { await getToken();
+    const r = await fbFetch(FB_DOC + '/h2d_chat?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ fields: { uid:{stringValue:pid}, nick:{stringValue:nick}, text:{stringValue:text.slice(0,60)}, ts:{integerValue:String(Date.now())}, best:{integerValue:String(bestStage)} } }) });
+    if (!r.ok){ toast('보내지 못했어요 (' + lastNetErr + ')'); inp.value = text; return; }
+  } catch(e){ toast('보내지 못했어요'); inp.value = text; return; }
+  loadChat();
+}
+try { chatSeen = +(localStorage.getItem('h2d_chatSeen') || 0); } catch(e){}
+document.getElementById('bChat').onclick = () => { chatOpen = true; document.getElementById('chat').classList.add('on'); document.getElementById('chatDot').classList.remove('on'); document.getElementById('chatL').dataset.first = ''; loadChat(); };
+document.getElementById('chatX').onclick = () => { chatOpen = false; document.getElementById('chat').classList.remove('on'); };
+document.getElementById('chatGo').onclick = sendChat;
+document.getElementById('chatIn').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); sendChat(); } });
+setInterval(() => { if (!IS_TEST && (chatOpen || !document.hidden)) loadChat(); }, 5000);
+
 // ---- 시작 ----
 if (!IS_TEST){
   document.getElementById('bTest').style.display = 'none';
   const d = loadGame();
   if (d) offlineReward(d); else { pid = ''; }
   if (!nick) document.getElementById('nick').classList.add('on');
-  raidFix(); setTimeout(raidClaim, 2500);
+  raidFix(); setTimeout(raidClaim, 2500); buildSkillBar();
   if (!stats.first) stats.first = Date.now(); stats.visits++;
   setInterval(() => { if (!document.hidden) stats.playSec++; }, 1000);
   setTimeout(pushStats, 4000); setInterval(() => { if (!document.hidden) pushStats(); }, 120000);
