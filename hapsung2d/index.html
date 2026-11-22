@@ -109,6 +109,8 @@
   .rk em small{display:block;font-size:2.8cqw;color:#b8a88a}
   .rk.me{background:rgba(242,200,106,.18);border-radius:10px}
   .rk-msg{font-family:Jua;font-size:3.8cqw;color:#d8c39a;padding:6cqw 0}
+  .tin{font-family:Jua;font-size:5cqw;text-align:center;padding:2.4cqw;border-radius:12px;border:2px solid #f2c86a;background:#120c08;color:#fff;margin-bottom:1.5cqw;user-select:text;-webkit-user-select:text}
+  .terr{font-family:Jua;font-size:3.4cqw;color:#ff8a7a;min-height:5cqw}
   #load{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#120c08;font-family:Jua;font-size:6cqw;color:#f2c86a;transition:opacity .4s}
 </style>
 </head>
@@ -148,6 +150,8 @@
   <div class="modal" id="nick"><div class="box"><div class="mh">환영해요, 용사님!</div><p>랭킹에 표시될 이름을 정해주세요</p>
     <input id="nickIn" maxlength="8" placeholder="닉네임 (2~8글자)"><div id="nickErr"></div><button id="nickOk" class="big">시작하기</button></div></div>
   <div class="modal" id="offline"><div class="box"><div class="mh">돌아오셨군요!</div><p id="offT"></p><div id="offL" class="list"></div><button id="offOk" class="big">받기</button></div></div>
+  <div class="modal" id="coupon"><div class="box"><div class="mh">🎟 쿠폰 입력<button id="cpX">✕</button></div><p>쿠폰 번호를 입력해 주세요</p>
+    <input id="cpIn" class="tin" maxlength="20" placeholder="예) ABCD-1234"><div id="cpErr" class="terr"></div><button id="cpOk" class="big">받기</button></div></div>
   <div id="load">불러오는 중…</div>
 </div></div>
 <script>
@@ -458,7 +462,7 @@ const MERGE_RATE = { 2:80, 3:70, 4:60, 5:50, 6:40, 7:30, 8:20, 9:10, 10:5 };
 const CRAFT_RATE = { 1:90, 2:85, 3:50, 4:25, 5:10 };
 const craftRate = t => CRAFT_RATE[own[t].have ? own[t].star + 1 : 1];
 function addCoin(n, why){ coin += n; updCoin(); if (why) toast(why + ' · 희망코인 +' + n); }
-function updCoin(){ document.getElementById('coin').textContent = coin; sig = ''; }
+function updCoin(){ document.getElementById('coin').textContent = fmt(coin); sig = ''; }
 function merge(a, b){ // a를 b 위로
   const A = grid[a], B = grid[b]; grid[a] = null;
   const p = slotPos(b);
@@ -781,6 +785,8 @@ function updPanels(){
     h += row('🛡', '파괴방지 주문서', '진화 물건 합성이 실패해도 부서지지 않아요 (자동 사용) · 보유 ' + inv.protect + '장', 'protect', '💎 ' + PROTECT_COST, coin >= PROTECT_COST);
     h += row('✨', '랜덤 강화권 (0~3)', '진화 물건 하나를 0~3단계 올려줘요 · 보유 ' + inv.boost + '장', 'boost', '💎 ' + BOOST_COST, coin >= BOOST_COST);
     if (inv.boost > 0) h += row('✨', '랜덤 강화권 사용하기', '+0: 30% · +1: 40% · +2: 20% · +3: 10%', 'useboost', '사용', true);
+    h += row('<img src="' + itemIcon('stone', MAXLV) + '">', '10단계 돌', '태초의 돌 1개 (두 개 모으면 진화!)', 'stone10', '💎 ' + STONE10_COST, coin >= STONE10_COST);
+    h += row('🎟', '쿠폰 입력', '받은 쿠폰 번호를 넣으면 보상을 받아요', 'coupon', '입력', true);
     h += row('💎', '희망코인 충전', '보스 처치·이벤트 상자·방어전으로 무료로 모을 수 있어요', 'charge', '충전', true);
     document.getElementById('paneS').innerHTML = h;
   }
@@ -806,7 +812,7 @@ function updPanels(){
   }
 }
 const bagCost = () => [800, 3000, 10000][(grid.length - 12)/4] || 0;
-const TICKET_COST = 1000, PROTECT_COST = 5, BOOST_COST = 8;
+const TICKET_COST = 1000, PROTECT_COST = 5, BOOST_COST = 8, STONE10_COST = 30;
 const packCost = () => Math.round(sumCost * 5 * 0.8);
 document.getElementById('paneS').onclick = e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return; const a = b.dataset.a;
@@ -815,6 +821,8 @@ document.getElementById('paneS').onclick = e => {
   else if (a === 'protect'){ if (coin < PROTECT_COST) return; coin -= PROTECT_COST; inv.protect++; updCoin(); toast('파괴방지 주문서 +1 (보유 ' + inv.protect + '장)'); }
   else if (a === 'boost'){ if (coin < BOOST_COST) return; coin -= BOOST_COST; inv.boost++; updCoin(); toast('랜덤 강화권 +1 (보유 ' + inv.boost + '장)'); }
   else if (a === 'useboost'){ if (inv.boost <= 0) return; if (!grid.some(x => x && x.t !== 'stone' && x.lv < MAXLV)){ toast('강화할 진화 물건이 없어요'); return; } setUse('boost'); return; }
+  else if (a === 'stone10'){ if (coin < STONE10_COST) return; if (grid.indexOf(null) < 0){ toast('가방에 빈 칸이 필요해요'); return; } coin -= STONE10_COST; updCoin(); put({t:'stone', lv:MAXLV}); toast('10단계 돌 획득!'); }
+  else if (a === 'coupon'){ document.getElementById('cpIn').value = ''; document.getElementById('cpErr').textContent = ''; document.getElementById('coupon').classList.add('on'); return; }
   else if (a === 'charge'){ toast('실제 결제는 정식 출시 때 연결돼요'); return; }
   else if (a === 'pack'){ const c = packCost(); if (gold < c) return; if (grid.filter(x => !x).length < 5){ toast('빈 칸이 5개 필요해요'); return; }
     gold -= c; const lv = clamp(bestOf('stone')-3,1,7); for (let i=0;i<5;i++) put({t:'stone', lv}); sumCost = Math.round(sumCost*1.05+1); toast('돌 5개 획득!'); }
@@ -1101,7 +1109,7 @@ let pid = '', nick = '', bestStage = 1, rankDirty = true;
 const lsGet = k => { try { return localStorage.getItem(k); } catch(e){ return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e){} };
 function snapshot(){ return { v:1, gold, coin, stageNo, bestStage, sumCost, atkLv, atkCost, grid: grid.map(x => x ? [x.t, x.lv] : 0), own, equipped, inv, tickets, ticketT,
-  pendingRare, pid, nick, lastSeen: Date.now() }; }
+  pendingRare, pid, nick, usedCodes, lastSeen: Date.now() }; }
 function saveGame(){ if (IS_TEST || !pid) return; lsSet(SAVE_KEY, JSON.stringify(snapshot())); }
 function loadGame(){
   let d = null; try { d = JSON.parse(lsGet(SAVE_KEY) || 'null'); } catch(e){}
@@ -1112,7 +1120,7 @@ function loadGame(){
   equipped = (d.equipped || ['stone']).filter(t => own[t] && own[t].have);
   Object.assign(inv, d.inv || {}); tickets = d.tickets ?? 2; ticketT = d.ticketT ?? TICKET_TIME;
   pendingRare.length = 0; (d.pendingRare || []).forEach(v => pendingRare.push(v));
-  pid = d.pid || ''; nick = d.nick || '';
+  pid = d.pid || ''; nick = d.nick || ''; usedCodes = d.usedCodes || [];
   return d;
 }
 // 자리를 비운 동안: 지금 스테이지 기준 초당 0.25마리 사냥으로 계산, 최대 8시간
@@ -1154,6 +1162,20 @@ const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()); document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
+// ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
+const COUPONS = { '7035109cf6311aef87dba0282078ddc8f8972960024310811785dd4a356b83ee': { coin: 1000000, label: '희망코인 1,000,000개' } };
+let usedCodes = [];
+async function sha(t){ const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join(''); }
+document.getElementById('cpX').onclick = () => document.getElementById('coupon').classList.remove('on');
+document.getElementById('cpOk').onclick = async () => {
+  const v = document.getElementById('cpIn').value.trim().toUpperCase(), err = document.getElementById('cpErr');
+  if (!v){ err.textContent = '번호를 입력해 주세요'; return; }
+  let h = ''; try { h = await sha(v); } catch(e){ err.textContent = '이 브라우저에서는 쿠폰을 쓸 수 없어요'; return; }
+  const c = COUPONS[h]; if (!c){ err.textContent = '없는 쿠폰 번호예요'; return; }
+  if (usedCodes.includes(h)){ err.textContent = '이미 사용한 쿠폰이에요'; return; }
+  usedCodes.push(h); if (c.coin) coin += c.coin; updCoin(); saveGame();
+  document.getElementById('coupon').classList.remove('on'); banner('쿠폰 보상!', c.label); shake = 12;
+};
 // ---- 닉네임 (처음 한 번) ----
 document.getElementById('nickOk').onclick = () => {
   const v = document.getElementById('nickIn').value.trim();
