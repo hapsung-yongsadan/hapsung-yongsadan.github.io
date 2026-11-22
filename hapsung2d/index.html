@@ -74,6 +74,13 @@
   #dResR{font-family:Jua;font-size:4.4cqw;margin:1cqw 0 3cqw;color:#e8d8b0}
   #dResList{font-family:Jua;font-size:4.6cqw;line-height:1.6;margin-bottom:4cqw}
   #dBack{font-family:Jua;font-size:5cqw;color:#fff;border:2px solid #f2c86a;border-radius:16px;padding:2.5cqw 8cqw;background:linear-gradient(180deg,#8a5d22,#4a2f10)}
+  .tabs button{width:13.4cqw!important}
+  .row .pic.ic{display:grid;place-items:center;font-size:8cqw;background:rgba(0,0,0,.3);border-radius:12px}
+  .row .pic.ic img{width:11cqw;height:11cqw}
+  #sellZ{position:absolute;left:3%;right:3%;bottom:2.2%;height:7.4cqh;z-index:9;display:none;place-items:center;border-radius:14px;border:3px dashed #ffb49a;
+    background:rgba(120,20,10,.75);font-family:Jua;font-size:4.4cqw;color:#fff;pointer-events:none}
+  #sellZ.on{display:grid}
+  #sellZ.hot{background:rgba(200,40,20,.92);border-style:solid;transform:scale(1.03)}
   #load{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#120c08;font-family:Jua;font-size:6cqw;color:#f2c86a;transition:opacity .4s}
 </style>
 </head>
@@ -87,9 +94,11 @@
   <button class="test idle" id="bTest">시험용: 10단계 돌 받기</button>
   <div id="banner">진화!<small></small></div>
   <div id="toast"></div>
-  <div class="tabs idle" id="tabs"><button class="on" data-t="0">가방</button><button data-t="1">영웅<i id="dotH"></i></button><button data-t="2">제작<i id="dotC"></i></button></div>
+  <div class="tabs idle" id="tabs"><button class="on" data-t="0">가방</button><button data-t="1">영웅<i id="dotH"></i></button><button data-t="2">제작<i id="dotC"></i></button><button data-t="3">상점</button></div>
   <div class="pane idle" id="paneH"></div>
   <div class="pane idle" id="paneC"></div>
+  <div class="pane idle" id="paneS"></div>
+  <div id="sellZ">여기에 놓으면 판매</div>
   <button id="bEnter" class="idle">⚔ 성벽 방어전<small id="enterN">입장권 2 / 3</small></button>
   <button class="dui quit" id="dQuit">포기하고 나가기</button>
   <button class="dui quit hunt" id="dHunt">◀ 사냥터 보기<small id="dHuntN">사냥 중</small></button>
@@ -255,8 +264,12 @@ function placeActors(dt){
 let heroHp = 1500, heroMax = 1500, hurt = 0;
 
 // ---------- 합성 칸 (4 x 3) ----------
-const GX = 64, GY = 830, CW = 148, CH = 112, COLS = 4, ROWS = 3;
-const grid = new Array(COLS*ROWS).fill(null);
+let GX = 64, GY = 830, CW = 148, CH = 112, COLS = 4, ROWS = 3;
+const grid = new Array(12).fill(null);
+const BAG_MAX = 24;
+// 칸 수에 맞춰 격자 크기 다시 계산 (12=4x3, 16=4x4, 20=5x4, 24=6x4)
+function layout(){ const n = grid.length; COLS = n <= 16 ? 4 : n <= 20 ? 5 : 6; ROWS = Math.ceil(n/COLS);
+  CW = Math.min(148, 640/COLS); CH = Math.min(112, 336/ROWS); GX = (W - COLS*CW)/2; GY = 830; }
 grid[0] = {t:'stone', lv:1}; grid[1] = {t:'stone', lv:1}; grid[2] = {t:'stone', lv:2};
 const slotPos = i => ({ x: GX + (i%COLS)*CW + CW/2, y: GY + Math.floor(i/COLS)*CH + CH/2 });
 const bestOf = t => { let b = 0; for (const it of grid) if (it && it.t === t && it.lv > b) b = it.lv; return b; };
@@ -399,8 +412,16 @@ function slotAt(p){ const c = Math.floor((p.x - GX)/CW), r = Math.floor((p.y - G
 cv.addEventListener('pointerdown', e => { const p = lp(e), i = slotAt(p); if (mode === 'def'){ dDown(p, e); return; }
   if (chest && Math.hypot(p.x - chest.x, p.y - (chest.y - 50)) < 90){ openChest(); return; }
   if (i >= 0 && grid[i]){ drag = { i, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); } });
-cv.addEventListener('pointermove', e => { if (mode === 'def'){ dMove(lp(e)); return; } if (drag){ const p = lp(e); drag.x = p.x; drag.y = p.y; } });
-cv.addEventListener('pointerup', e => { if (mode === 'def'){ dUp(lp(e)); return; } if (!drag) return; const j = slotAt(lp(e)), i = drag.i; drag = null;
+cv.addEventListener('pointermove', e => { if (mode === 'def'){ dMove(lp(e)); return; } if (drag){ const p = lp(e); drag.x = p.x; drag.y = p.y; sellZone(true, p.y > SELL_Y, '여기에 놓으면 판매 · 💰' + fmt(sellValue(grid[drag.i]))); } });
+// 판매: 끌어서 아래 버튼 자리에 놓기. 값 = 지금 뽑기 가격 기준(뽑아서 바로 팔면 손해)
+const SELL_Y = 1170;
+function sellValue(it){ if (!it) return 0; const base = clamp(bestOf('stone') - 3, 1, 7), lv = it.t === 'stone' ? it.lv : MAXLV + it.lv;
+  return Math.max(1, Math.round(sumCost * 0.4 * Math.pow(2, lv - base))); }
+function sellItem(i){ const it = grid[i]; if (!it) return; const v = sellValue(it); grid[i] = null; gold += v; updBtns(); sig = '';
+  const p = slotPos(i); burst(p.x, p.y, 12, '#ffe27a'); toast((it.t === 'stone' ? TYPES.stone.names[it.lv-1] : TYPES[it.t].names[it.lv-1]) + ' 판매 · 💰' + fmt(v)); }
+function sellZone(on, hot, txt){ const z = document.getElementById('sellZ'); z.classList.toggle('on', !!on); z.classList.toggle('hot', !!hot); if (txt) z.textContent = txt; }
+cv.addEventListener('pointerup', e => { sellZone(false); if (mode === 'def'){ dUp(lp(e)); return; } if (!drag) return; const pp = lp(e), j = slotAt(pp), i = drag.i; drag = null;
+  if (pp.y > SELL_Y){ sellItem(i); return; }
   if (j < 0 || j === i) return;
   if (canMerge(grid[i], grid[j])) merge(i, j);
   else if (grid[j] && grid[i].t === grid[j].t && grid[i].lv === grid[j].lv) toast('최고 단계예요');
@@ -437,11 +458,12 @@ function drawPanel(){
       else s = pp.kind === 'merge' ? 1 + 0.5*Math.sin(k*Math.PI) : pp.kind === 'evolve' ? 1 + 0.9*Math.sin(k*Math.PI)*(1-k) : ease.back(Math.min(1,k)); }
     const pair = grid.some((o,j) => j !== i && canMerge(o, it));
     const wob = pair ? Math.sin(time*7 + i)*0.15 : 0;
-    drawItem(it.t, it.lv, p.x, p.y - 10, 32*s, wob);
-    cx.font = '400 20px Jua'; cx.textAlign = 'center'; cx.lineWidth = 5; cx.strokeStyle = '#000'; cx.lineJoin='round';
+    const K = Math.min(CW/148, CH/112);
+    drawItem(it.t, it.lv, p.x, p.y - 10*K, 32*s*K, wob);
+    cx.font = '400 ' + Math.round(20*Math.max(0.8,K)) + 'px Jua'; cx.textAlign = 'center'; cx.lineWidth = 5; cx.strokeStyle = '#000'; cx.lineJoin='round';
     const lab = (it.t === 'stone' ? '' : TYPES[it.t].name + ' ') + 'Lv.' + it.lv;
-    cx.strokeText(lab, p.x, p.y + 44); cx.fillStyle = it.t === 'stone' ? '#e8e0d0' : `hsl(${hue(it.lv)},100%,78%)`; cx.fillText(lab, p.x, p.y + 44);
-    if (it.t === 'stone' && it.lv === MAXLV){ cx.font='400 16px Jua'; cx.fillStyle='#ffe27a'; cx.strokeText('진화 가능', x+40, y+20); cx.fillText('진화 가능', x+40, y+20); }
+    const ly = p.y + CH*0.39; cx.strokeText(lab, p.x, ly); cx.fillStyle = it.t === 'stone' ? '#e8e0d0' : `hsl(${hue(it.lv)},100%,78%)`; cx.fillText(lab, p.x, ly);
+    if (it.t === 'stone' && it.lv === MAXLV){ cx.font='400 16px Jua'; cx.fillStyle='#ffe27a'; cx.strokeText('진화 가능', x+w/2, y+16); cx.fillText('진화 가능', x+w/2, y+16); }
   }
   if (drag && grid[drag.i]){ const it = grid[drag.i]; drawItem(it.t, it.lv, drag.x, drag.y, 40, Math.sin(time*10)*0.1);
     const j = slotAt(drag); if (j >= 0 && j !== drag.i && canMerge(it, grid[j])){ const p = slotPos(j); cx.strokeStyle='#9dff9a'; cx.lineWidth=4; rr(p.x-CW/2+6,p.y-CH/2+6,CW-12,CH-12,16); cx.stroke(); } }
@@ -481,7 +503,7 @@ function drawPieces(dt){
     cx.save(); cx.translate(p.x, p.y); cx.rotate(time*6); cx.fillStyle = '#e9d0ff'; cx.strokeStyle='#4a1a7a'; cx.lineWidth=3;
     cx.beginPath(); cx.moveTo(0,-14); cx.lineTo(11,0); cx.lineTo(0,14); cx.lineTo(-11,0); cx.closePath(); cx.fill(); cx.stroke(); cx.restore(); }
 }
-const tabX = i => [112, 232, 352][i];
+const tabX = i => [104, 208, 312, 416][i];
 function drawMob(m){
   const dying = m.dead > 0, d = dying ? Math.min(1, m.dead/0.4) : 0;
   const walking = m.x > STOP; const bob = walking ? Math.abs(Math.sin(m.hop))*10 : 0;
@@ -607,7 +629,7 @@ function itemIcon(t, lv){ const key = t+lv; if (ICON[key]) return ICON[key]; con
 let tab = 0;
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { tab = +b.dataset.t;
   document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
-  document.getElementById('paneH').classList.toggle('on', tab === 1); document.getElementById('paneC').classList.toggle('on', tab === 2); sig = ''; updPanels(); });
+  document.getElementById('paneH').classList.toggle('on', tab === 1); document.getElementById('paneC').classList.toggle('on', tab === 2); document.getElementById('paneS').classList.toggle('on', tab === 3); sig = ''; updPanels(); });
 function craftItem(t){ let bi = -1; grid.forEach((it,i) => { if (it && it.t === t && it.lv >= RECIPE[t].lv && (bi < 0 || it.lv < grid[bi].lv)) bi = i; }); return bi; }
 const canCraft = t => craftItem(t) >= 0 && gold >= RECIPE[t].gold && own[t].star < MAX_STAR;
 const canPiece = t => own[t].pieces >= piecesNeed(t) && own[t].star < MAX_STAR;
@@ -632,7 +654,17 @@ function updPanels(){
   document.getElementById('dotH').classList.toggle('on', T.some(canPiece));
   document.getElementById('dotC').classList.toggle('on', T.some(canCraft));
   const ns = tab + '|' + T.map(t => [own[t].have, own[t].star, own[t].pieces, equipped.indexOf(t), canCraft(t), craftItem(t) >= 0].join(',')).join(';');
-  if (ns === sig) return; sig = ns;
+  const shopSig = [grid.length, tickets, gold >= bagCost(), gold >= TICKET_COST, gold >= packCost()].join(',');
+  if (ns + shopSig === sig) return; sig = ns + shopSig;
+  if (tab === 3){
+    const row = (img, name, desc, a, label, ok) => '<div class="row"><div class="pic ic">' + img + '</div><div class="tx">' + name + '<small>' + desc + '</small></div><button data-a="' + a + '"' + (ok ? '' : ' disabled') + '>' + label + '</button></div>';
+    let h = '<div class="hd">골드로 살 수 있는 물건이에요</div>';
+    h += grid.length >= BAG_MAX ? row('🎒', '가방 칸 +4', '최대 ' + BAG_MAX + '칸까지 늘렸어요', 'bag', '최대', false)
+                               : row('🎒', '가방 칸 +4', '지금 ' + grid.length + '칸 → ' + (grid.length+4) + '칸', 'bag', '💰' + fmt(bagCost()), gold >= bagCost());
+    h += row('⚔', '방어전 입장권 +1', '지금 ' + tickets + '장 (자동 충전은 ' + TICKET_MAX + '장까지)', 'ticket', '💰' + fmt(TICKET_COST), gold >= TICKET_COST);
+    h += row('<img src="' + itemIcon('stone', clamp(bestOf('stone')-3,1,7)) + '">', '돌 꾸러미', clamp(bestOf('stone')-3,1,7) + '단계 돌 5개 (뽑기보다 20% 싸요)', 'pack', '💰' + fmt(packCost()), gold >= packCost());
+    document.getElementById('paneS').innerHTML = h;
+  }
   if (tab === 1){
     let h = '<div class="hd">장착한 영웅은 전장에 나와서 자기 물건의 피해를 올려줘요 · 장착 ' + equipped.length + ' / ' + MAX_EQ + '</div>';
     for (const t of T){ const o = own[t], eq = equipped.includes(t), need = piecesNeed(t);
@@ -654,6 +686,17 @@ function updPanels(){
     document.getElementById('paneC').innerHTML = h;
   }
 }
+const bagCost = () => [800, 3000, 10000][(grid.length - 12)/4] || 0;
+const TICKET_COST = 1000;
+const packCost = () => Math.round(sumCost * 5 * 0.8);
+document.getElementById('paneS').onclick = e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return; const a = b.dataset.a;
+  if (a === 'bag'){ const c = bagCost(); if (grid.length >= BAG_MAX || gold < c) return; gold -= c; for (let i=0;i<4;i++) grid.push(null); layout(); toast('가방이 ' + grid.length + '칸이 됐어요'); }
+  else if (a === 'ticket'){ if (gold < TICKET_COST) return; gold -= TICKET_COST; tickets++; lastEnter = ''; toast('방어전 입장권 +1'); }
+  else if (a === 'pack'){ const c = packCost(); if (gold < c) return; if (grid.filter(x => !x).length < 5){ toast('빈 칸이 5개 필요해요'); return; }
+    gold -= c; const lv = clamp(bestOf('stone')-3,1,7); for (let i=0;i<5;i++) put({t:'stone', lv}); sumCost = Math.round(sumCost*1.05+1); toast('돌 5개 획득!'); }
+  goldShown = Math.min(goldShown, gold); updBtns(); sig = ''; updPanels();
+};
 document.getElementById('paneH').onclick = document.getElementById('paneC').onclick = e => {
   const b = e.target.closest('button'); if (!b) return; const t = b.dataset.k, a = b.dataset.a;
   if (a === 'eq'){ const i = equipped.indexOf(t); if (i >= 0) equipped.splice(i,1); else if (equipped.length >= MAX_EQ){ toast('장착은 ' + MAX_EQ + '명까지예요'); return; } else { equipped.push(t); toast(TYPES[t].who + ' 장착 · ' + PASSIVE[t].name + ' 발동!'); } sig = ''; updPanels(); }
@@ -804,8 +847,11 @@ document.getElementById('dBack').onclick = leaveDefense;
 
 function dSlotAt(p){ if (p.y < DSY-190 || p.y > DSY+40) return -1; const i = Math.round((p.x - DSX0)/DSDX); return i>=0 && i<DNS && Math.abs(p.x - dSlotX(i)) < DSDX/2 ? i : -1; }
 function dDown(p, e){ const i = dSlotAt(p); if (i>=0 && D.slots[i]){ D.drag = { i, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); } }
-function dMove(p){ if (D.drag){ D.drag.x = p.x; D.drag.y = p.y; } }
-function dUp(p){ if (!D.drag) return; const j = dSlotAt(p), i = D.drag.i; D.drag = null; if (j<0 || j===i) return;
+const dSellV = u => Math.max(5, Math.round(D.sumCost * 0.4 * Math.pow(2, u.star-1)));
+function dMove(p){ if (D.drag){ D.drag.x = p.x; D.drag.y = p.y; const u = D.slots[D.drag.i]; if (u) sellZone(true, p.y > SELL_Y, '여기에 놓으면 내보내기 · 방어 골드 +' + dSellV(u)); } }
+function dUp(p){ if (!D.drag) return; const j = dSlotAt(p), i = D.drag.i; D.drag = null;
+  if (p.y > SELL_Y){ const u = D.slots[i]; if (!u) return; const v = dSellV(u); D.slots[i] = null; D.gold += v; burst(dSlotX(i), DSY-80, 12, '#ffe27a'); toast(TYPES[u.t].who + ' 내보냄 · 방어 골드 +' + v); updDef(); return; }
+  if (j<0 || j===i) return;
   const a = D.slots[i], b = D.slots[j];
   if (b && a.t === b.t && a.star === b.star){ if (b.star >= 5){ toast('최고 등급이에요'); return; } dMerge(i, j); }
   else { D.slots[j] = a; D.slots[i] = b; a.pop = 0.6; if (b) b.pop = 0.6; } }
