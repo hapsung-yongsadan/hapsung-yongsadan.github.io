@@ -1063,14 +1063,17 @@ function updEnter(){
   const h = document.getElementById('dHuntN'); if (h) h.textContent = document.getElementById('stgName').textContent + ' 사냥 중';
 }
 const TICKET_MAX = 3, TICKET_TIME = 120, D_MAXR = 10;
-const DNS = 6, DSY = 1000, DSX0 = 75, DSDX = 114, DWALL = 830;
-const dSlotX = i => DSX0 + i*DSDX;
+// 용병 칸 10개 (2줄 × 5) + 장착 영웅은 성벽 위 지휘관 자리에 따로
+const DNS = 10, DWALL = 830, CMD_X = [170, 360, 550], CMD_Y = 905;
+const dPos = i => i >= 100 ? { x: CMD_X[i-100], y: CMD_Y } : { x: 104 + (i%5)*128, y: i < 5 ? 990 : 1095 };
+const dSlotX = i => dPos(i).x;
+if (location.hash === '#test') setTimeout(() => { window.__dbg = { D, dPos }; }, 0);
 const DCD = { stone:0.6, orb:1.6, sword:0.9, arrow:0.5, egg:1.3 };
 const DK  = { stone:1.0, orb:1.1, sword:1.0, arrow:0.5, egg:0.7 };
 const STAR_COL = ['#ffffff','#7fe0ff','#c78bff','#ffd040','#ff6a5a'];
 const D = { slots:new Array(DNS).fill(null), mobs:[], shots:[], flames:[], round:1, phase:'break', breakT:6, toSpawn:0, spawnT:0, wall:0, wallMax:0,
   gold:0, sumCost:30, drag:null, over:false, cleared:0, earned:0 };
-const dHas = t => D.slots.some(u => u && u.t === t);
+const dHas = t => D.slots.some(u => u && u.t === t) || (D.cmds || []).some(u => u.t === t);
 function dUnit(t, star, merc){ return { t, star, merc, timer:rnd(0,0.8), act:null, flash:0, pop:1 }; }
 // 영웅 힘 = 그 물건을 얼마나 키웠는지(가방 최고 단계) × 방어전 안에서 올린 별
 function dPower(u){ const hi = heroItem(u.t); const base = bestOf(hi) ? dmgOf(hi, bestOf(hi)) : dmgOf('stone', Math.max(1, bestOf('stone')));
@@ -1085,7 +1088,7 @@ function enterDefense(){
   Object.assign(D, { mobs:[], shots:[], flames:[], round:1, phase:'break', breakT:8, toSpawn:0, spawnT:0, gold:60, sumCost:30, drag:null, over:false, cleared:0 });
   D.wallMax = D.wall = 2000; D.slots.fill(null);
   const list = equipped.length ? equipped : ['stone'];
-  list.forEach((t,i) => D.slots[i+1] = dUnit(t, Math.max(1, own[t].star), !own[t].have));
+  D.cmds = list.slice(0,3).map(t => Object.assign(dUnit(t, Math.max(1, own[t].star), false), { cmd:true }));
   banner('성벽 방어전!', '장착한 영웅들이 성벽 위로 올라갑니다'); updDef();
 }
 function leaveDefense(){
@@ -1127,7 +1130,7 @@ function dHit(m, v, crit, col){
     burst(m.x, m.y-m.h*0.45, m.boss?30:10, m.boss?'#ffcf5a':'#c8ff9a'); D.gold += m.boss ? 40 : 3 + Math.floor(D.round/2); if (m.boss){ shake = 28; hitStop = 0.1; } }
 }
 function dAct(i, u){
-  const x = dSlotX(i), col = `hsl(${hue(Math.max(1,bestOf(u.t)))},100%,70%)`;
+  const P = dPos(i), x = P.x, DSY = P.y, col = `hsl(${hue(Math.max(1,bestOf(u.t)))},100%,70%)`;
   const critP = 0.15 + critAdd() + (dHas('arrow') ? (5+3*PST('arrow'))/100 : 0);
   const crit = () => Math.random() < critP, val = c => dPower(u) * (c ? critMul() - 0.1 : 1) * rnd(0.9,1.1);
   const m = dTarget(x); if (!m) return false;
@@ -1168,10 +1171,11 @@ function dSummon(){
   if (D.gold < D.sumCost){ toast('방어 골드가 부족해요'); return; }
   D.gold -= D.sumCost; D.sumCost += 8;
   const t = Object.keys(TYPES)[Math.floor(Math.random()*5)];
-  D.slots[i] = dUnit(t, 1, true); burst(dSlotX(i), DSY-80, 10, '#fff1b0'); toast('용병 ' + heroName(t, 1) + ' 합류!'); updDef();
+  D.slots[i] = dUnit(t, 1, true); burst(dSlotX(i), dPos(i).y-80, 10, '#fff1b0'); toast('용병 ' + heroName(t, 1) + ' 합류!'); updDef();
 }
 function dMerge(a, b){
   const u = D.slots[b]; const before = heroName(u.t, u.star); u.star++; u.pop = 1; u.flash = 1; u.merc = u.merc && D.slots[a].merc; D.slots[a] = null;
+  const DSY = dPos(b).y;
   addFx({type:'img', k:'ring', x:dSlotX(b), y:DSY-4, s0:0.2, s1:1.0, life:.6, add:true, flat:true});
   addFx({type:'img', k:'star', x:dSlotX(b), y:DSY-90, s0:0.2, s1:0.8, life:.5, add:true});
   burst(dSlotX(b), DSY-90, 18, STAR_COL[Math.min(4,u.star-1)]); shake = Math.max(shake, 8); if (u.star === 3 || u.star === 5){ banner('진화!', before + ' → ' + heroName(u.t, u.star)); addFx({type:'img', k:'star', x:dSlotX(b), y:DSY-110, s0:0.4, s1:1.5, life:.8, add:true}); shake = 18; } else toast(heroName(u.t, u.star) + ' ' + u.star + '성!'); updDef();
@@ -1192,12 +1196,12 @@ document.getElementById('dGo').onclick = () => { if (D.phase === 'break' && !D.o
 document.getElementById('dQuit').onclick = () => { if (!D.over) dFinish(false, true); };
 document.getElementById('dBack').onclick = leaveDefense;
 
-function dSlotAt(p){ if (p.y < DSY-190 || p.y > DSY+40) return -1; const i = Math.round((p.x - DSX0)/DSDX); return i>=0 && i<DNS && Math.abs(p.x - dSlotX(i)) < DSDX/2 ? i : -1; }
+function dSlotAt(p){ for (let i=0;i<DNS;i++){ const q = dPos(i); if (Math.abs(p.x - q.x) < 64 && p.y > q.y - 115 && p.y < q.y + 28) return i; } return -1; }
 function dDown(p, e){ const i = dSlotAt(p); if (i>=0 && D.slots[i]){ D.drag = { i, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); } }
 const dSellV = u => Math.max(5, Math.round(D.sumCost * 0.4 * Math.pow(2, u.star-1)));
 function dMove(p){ if (D.drag){ D.drag.x = p.x; D.drag.y = p.y; const u = D.slots[D.drag.i]; if (u) sellZone(true, p.y > SELL_Y, '여기에 놓으면 내보내기 · 방어 골드 +' + dSellV(u)); } }
 function dUp(p){ if (!D.drag) return; const j = dSlotAt(p), i = D.drag.i; D.drag = null;
-  if (p.y > SELL_Y){ const u = D.slots[i]; if (!u) return; const v = dSellV(u); D.slots[i] = null; D.gold += v; burst(dSlotX(i), DSY-80, 12, '#ffe27a'); toast(heroName(u.t, u.star) + ' 내보냄 · 방어 골드 +' + v); updDef(); return; }
+  if (p.y > SELL_Y){ const u = D.slots[i]; if (!u) return; const v = dSellV(u); D.slots[i] = null; D.gold += v; burst(dSlotX(i), dPos(i).y-80, 12, '#ffe27a'); toast(heroName(u.t, u.star) + ' 내보냄 · 방어 골드 +' + v); updDef(); return; }
   if (j<0 || j===i) return;
   const a = D.slots[i], b = D.slots[j];
   if (b && a.t === b.t && a.star === b.star){ if (b.star >= 5){ toast('최고 등급이에요'); return; } dMerge(i, j); }
@@ -1218,19 +1222,20 @@ function dBuildWall(){
   return c;
 }
 function dDrawUnit(i, u, dt){
-  const dr = D.drag && D.drag.i === i, x = dr ? D.drag.x : dSlotX(i), y = dr ? D.drag.y + 60 : DSY;
+  const dr = D.drag && D.drag.i === i, x = dr ? D.drag.x : dSlotX(i), y = dr ? D.drag.y + 50 : dPos(i).y, cmd = i >= 100, HB = cmd ? 132 : 112;
   u.pop = Math.max(0, u.pop - dt*3); u.flash = Math.max(0, u.flash - dt*3);
   let sx = 1, sy = 1 + Math.sin(time*3 + i)*0.02, lift = 0;
   if (u.act){ const k = u.act.t/u.act.dur, r = Math.sin(k*Math.PI); sy += 0.06*r; sx -= 0.03*r; lift = 12*r; }
   const s = 1 + u.pop*0.35*Math.sin(u.pop*Math.PI);
+  if (cmd){ cx.save(); cx.globalAlpha = 0.5; const g0 = cx.createRadialGradient(x,y-6,4,x,y-6,70); g0.addColorStop(0,'rgba(255,215,90,.8)'); g0.addColorStop(1,'rgba(0,0,0,0)'); cx.fillStyle = g0; cx.beginPath(); cx.ellipse(x, y-6, 70, 22, 0, 0, Math.PI*2); cx.fill(); cx.restore(); }
   if (u.star >= 2){ cx.save(); cx.globalCompositeOperation='lighter'; const g = cx.createRadialGradient(x,y-6,4,x,y-6,64); g.addColorStop(0, STAR_COL[Math.min(4,u.star-1)]); g.addColorStop(1,'rgba(0,0,0,0)');
     cx.globalAlpha = 0.35 + 0.15*Math.sin(time*4+i); cx.beginPath(); cx.ellipse(x, y-6, 64, 22, 0, 0, Math.PI*2); cx.fillStyle = g; cx.fill(); cx.restore(); }
   shadow(x, y, 50, 1);
-  drawImgFoot(heroKey(u.t, u.star), x, y - lift, (150 + (u.star-1)*10)*s, { sx, sy, flash:u.flash });
-  { const hi = heroItem(u.t); if (bestOf(hi)) drawItem(hi, bestOf(hi), x + 38, y - 150 - lift, 15, 0); }
+  drawImgFoot(heroKey(u.t, u.star), x, y - lift, (HB + (u.star-1)*8)*s, { sx, sy, flash:u.flash });
+  { const hi = heroItem(u.t); if (bestOf(hi)) drawItem(hi, bestOf(hi), x + 32, y - HB - lift, 13, 0); }
   cx.font = '400 22px Jua'; cx.textAlign='center'; cx.lineWidth=5; cx.strokeStyle='#000'; cx.lineJoin='round';
-  const st = u.star >= 4 ? '★' + u.star : '★'.repeat(u.star); cx.strokeText(st, x, y + 30); cx.fillStyle = STAR_COL[Math.min(4,u.star-1)]; cx.fillText(st, x, y + 30);
-  if (u.merc){ cx.font = '400 16px Jua'; cx.strokeText('용병', x, y + 52); cx.fillStyle = '#c8b898'; cx.fillText('용병', x, y + 52); }
+  cx.font = '400 19px Jua'; const st = (cmd ? '👑 ' : '') + (u.star >= 4 ? '★' + u.star : '★'.repeat(u.star)); cx.strokeText(st, x, y + 22); cx.fillStyle = cmd ? '#ffd040' : STAR_COL[Math.min(4,u.star-1)]; cx.fillText(st, x, y + 22);
+  if (u.merc){ cx.font = '400 16px Jua';  }
 }
 function dDrawMob(m){
   const dying = m.dead > 0, d = dying ? Math.min(1, m.dead/0.4) : 0, walking = m.y < m.stopY && !(m.stun > 0);
@@ -1247,8 +1252,9 @@ function dDraw(dt){
   D.mobs.slice().sort((a,b)=>a.y-b.y).forEach(dDrawMob);
   if (!dWallCv) dWallCv = dBuildWall();
   const top = DWALL + 10; cx.drawImage(dWallCv, 0, top);
-  for (let i=0;i<DNS;i++){ const x = dSlotX(i); cx.save(); cx.globalAlpha = 0.5; cx.strokeStyle = 'rgba(255,240,200,.6)'; cx.lineWidth = 2; cx.setLineDash([8,6]); cx.beginPath(); cx.ellipse(x, DSY, 48, 15, 0, 0, Math.PI*2); cx.stroke(); cx.restore();
-    if (!D.slots[i]){ cx.font='400 20px Jua'; cx.textAlign='center'; cx.fillStyle='rgba(255,240,200,.55)'; cx.fillText('빈 자리', x, DSY-50); } }
+  for (let i=0;i<DNS;i++){ const x = dSlotX(i), DSY = dPos(i).y; cx.save(); cx.globalAlpha = 0.5; cx.strokeStyle = 'rgba(255,240,200,.6)'; cx.lineWidth = 2; cx.setLineDash([8,6]); cx.beginPath(); cx.ellipse(x, DSY, 48, 15, 0, 0, Math.PI*2); cx.stroke(); cx.restore();
+    if (!D.slots[i]){ cx.font='400 18px Jua'; cx.textAlign='center'; cx.fillStyle='rgba(255,240,200,.5)'; cx.fillText('빈 자리', x, DSY-40); } }
+  (D.cmds || []).forEach((u,k) => dDrawUnit(100+k, u, dt));
   D.slots.forEach((u,i) => { if (u && !(D.drag && D.drag.i === i)) dDrawUnit(i, u, dt); });
   drawMeteors(D.flames);
   for (const s of D.shots){ if (s.t < 0) continue;
@@ -1262,7 +1268,7 @@ function dDraw(dt){
   drawFx(dt); drawNums(dt);
   if (D.drag && D.slots[D.drag.i]){ cx.globalAlpha = 0.9; dDrawUnit(D.drag.i, D.slots[D.drag.i], dt); cx.globalAlpha = 1;
     const j = dSlotAt(D.drag), a = D.slots[D.drag.i], b = j>=0 ? D.slots[j] : null;
-    if (j>=0 && j!==D.drag.i){ cx.strokeStyle = b && b.t===a.t && b.star===a.star ? '#9dff9a' : '#fff'; cx.lineWidth = 4; cx.beginPath(); cx.ellipse(dSlotX(j), DSY, 52, 17, 0, 0, Math.PI*2); cx.stroke(); } }
+    if (j>=0 && j!==D.drag.i){ cx.strokeStyle = b && b.t===a.t && b.star===a.star ? '#9dff9a' : '#fff'; cx.lineWidth = 4; cx.beginPath(); cx.ellipse(dSlotX(j), dPos(j).y, 52, 17, 0, 0, Math.PI*2); cx.stroke(); } }
 }
 function dHud(){
   cx.save(); cx.textAlign='left'; cx.lineJoin='round'; cx.font='400 40px Jua'; cx.lineWidth=7; cx.strokeStyle='#000';
@@ -1271,10 +1277,10 @@ function dHud(){
   cx.strokeText(t2, 30, 96); cx.fillStyle='#f2c86a'; cx.fillText(t2, 30, 96);
   cx.textAlign='right'; cx.font='400 30px Jua'; cx.lineWidth=6; const t3 = '방어 골드 ' + D.gold; cx.strokeText(t3, W-28, 62); cx.fillStyle='#ffe27a'; cx.fillText(t3, W-28, 62);
   cx.restore();
-  const r = D.wall/D.wallMax, x = 80, y = DWALL + 10 + 216, w = W - 160;
+  const r = D.wall/D.wallMax, x = 30, y = 212, w = W - 290;
   cx.fillStyle='rgba(0,0,0,.7)'; rr(x-4,y-4,w+8,30,10); cx.fill();
   const g = cx.createLinearGradient(0,y,0,y+22); g.addColorStop(0, r>0.33?'#7fe07a':'#ff7a5a'); g.addColorStop(1, r>0.33?'#2c8a2a':'#a8141a'); cx.fillStyle = g; rr(x,y,w*clamp(r,0,1),22,8); cx.fill();
-  cx.font='400 20px Jua'; cx.textAlign='center'; cx.lineWidth=5; cx.strokeStyle='#000'; const t='성벽 ' + Math.ceil(D.wall).toLocaleString() + ' / ' + D.wallMax.toLocaleString(); cx.strokeText(t, W/2, y+18); cx.fillStyle='#fff'; cx.fillText(t, W/2, y+18);
+  cx.font='400 20px Jua'; cx.textAlign='center'; cx.lineWidth=5; cx.strokeStyle='#000'; const t='성벽 ' + Math.ceil(D.wall).toLocaleString() + ' / ' + D.wallMax.toLocaleString(); cx.strokeText(t, x + w/2, y+18); cx.fillStyle='#fff'; cx.fillText(t, x + w/2, y+18);
   if (D.phase === 'break' && !D.over){ cx.save(); cx.textAlign='center'; cx.lineJoin='round'; cx.font='400 44px Jua'; cx.lineWidth=8; cx.strokeStyle='#000'; const tt = '다음 라운드까지 ' + Math.ceil(D.breakT) + '초';
     cx.strokeText(tt, W/2, 470); cx.fillStyle='#ffe27a'; cx.fillText(tt, W/2, 470); cx.font='400 26px Jua'; cx.lineWidth=6; const t4 = '같은 영웅 · 같은 별끼리 끌어다 놓으면 합성!'; cx.strokeText(t4, W/2, 518); cx.fillStyle='#fff'; cx.fillText(t4, W/2, 518); cx.restore(); }
   const b = D.mobs.find(m=>m.boss && !m.dead); if (b){ const bx=90,by=150,bw=W-180,br=Math.max(0,b.hp/b.max);
@@ -1287,6 +1293,7 @@ function dUpdate(dt){
     else { document.getElementById('dGoC').textContent = '전투 중';
       D.spawnT -= dt; if (D.toSpawn > 0 && D.spawnT <= 0){ dSpawn(false); D.toSpawn--; D.spawnT = rnd(0.35,0.8) * Math.max(0.5, 1 - D.round*0.04); }
       if (D.toSpawn === 0 && !D.mobs.some(m=>!m.dead)) dEndRound(); }
+    (D.cmds || []).forEach((u,k) => { if (u.act){ u.act.t += dt; if (u.act.t >= u.act.dur) u.act = null; } u.timer -= dt; if (u.timer <= 0) u.timer = dAct(100+k, u) ? DCD[u.t] * Math.pow(0.92, u.star-1) * rnd(0.9,1.1) : 0.2; });
     D.slots.forEach((u,i) => { if (!u) return; if (u.act){ u.act.t += dt; if (u.act.t >= u.act.dur) u.act = null; } if (D.drag && D.drag.i === i) return;
       u.timer -= dt; if (u.timer <= 0) u.timer = dAct(i, u) ? DCD[u.t] * Math.pow(0.92, u.star-1) * rnd(0.9,1.1) : 0.2; });
     dUpdShots(dt);
