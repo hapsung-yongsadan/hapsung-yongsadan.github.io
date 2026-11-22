@@ -64,6 +64,9 @@
   @keyframes pulse{50%{box-shadow:0 4px 0 #3a0c06,0 0 26px rgba(255,120,60,.9)}}
   .btns button.red{background:linear-gradient(180deg,#b23a24,#5e160c);border-color:#ffb49a;box-shadow:0 4px 0 #3a0c06}
   .quit{position:absolute;right:3%;top:9.5%;z-index:7;font-family:Jua;font-size:3cqw;color:#e9dcc0;background:rgba(22,16,12,.85);border:1.5px solid rgba(242,200,106,.35);border-radius:10px;padding:1cqw 2.4cqw}
+  .quit.hunt{top:14.6%;font-size:3.4cqw;color:#fff;border:2px solid #9fd4ff;background:linear-gradient(180deg,#2e6a9a,#173a5a);text-align:center;line-height:1.15}
+  .quit.hunt small{display:block;font-size:2.5cqw;color:#cfe8ff}
+  #bEnter.live{background:linear-gradient(180deg,#2e6a9a,#173a5a);border-color:#9fd4ff;box-shadow:0 4px 0 #0c2236,0 0 16px rgba(90,170,255,.6)}
   #dRes{position:absolute;inset:0;z-index:15;display:none;place-items:center;background:rgba(0,0,0,.72);text-align:center}
   #dRes.on{display:grid}
   #dRes .box{background:linear-gradient(180deg,#3a2716,#1a110a);border:2px solid #f2c86a;border-radius:18px;padding:5cqw 8cqw;min-width:66cqw}
@@ -89,6 +92,7 @@
   <div class="pane idle" id="paneC"></div>
   <button id="bEnter" class="idle">⚔ 성벽 방어전<small id="enterN">입장권 2 / 3</small></button>
   <button class="dui quit" id="dQuit">포기하고 나가기</button>
+  <button class="dui quit hunt" id="dHunt">◀ 사냥터 보기<small id="dHuntN">사냥 중</small></button>
   <div class="btns dui">
     <button id="dSum">용병 뽑기<small id="dSumC">💰 30</small></button>
     <button id="dRep" class="blue">성벽 수리<small id="dRepC">💰 50</small></button>
@@ -221,7 +225,22 @@ function drawItem(t, lv, x, y, r, rot=0, alpha){
 let gold = 60, goldShown = 60, stageNo = 1, kills = 0, bossOn = false, sumCost = 20, atkLv = 1, atkCost = 60;
 const KB = 15;
 const AREA = ['초록 들판','이끼 숲','안개 늪','바람 언덕','붉은 화산'];
-const mobs = [], shots = [], fx = [], nums = [], coins = [];
+const mobs = [], shots = [], coins = [];
+// 사냥터와 방어전이 동시에 돌아가므로 이펙트·숫자 목록을 장면별로 따로 둠
+const FXS = { idle:{fx:[],nums:[]}, def:{fx:[],nums:[]} };
+let fx = FXS.idle.fx, nums = FXS.idle.nums, scene = 'idle';
+function useScene(sc){ scene = sc; fx = FXS[sc].fx; nums = FXS[sc].nums; }
+function tickFx(dt){ for (let i=fx.length-1;i>=0;i--){ const f = fx[i]; f.t += dt; if (f.type === 'spark'){ f.x += f.vx*dt; f.y += f.vy*dt; } if ((f.t-(f.delay||0))/f.life >= 1) fx.splice(i,1); }
+  for (let i=nums.length-1;i>=0;i--){ const n = nums[i]; n.t += dt; if (n.t >= (n.crit ? 0.95 : 0.7)) nums.splice(i,1); } }
+// 희귀 돌: 몬스터 처치 시 0.001% 확률, 지금 최고 돌 +3단계 (5~10단계)
+let RARE = 0.00001; const pendingRare = [];
+function rareDrop(m){
+  const lv = clamp(bestOf('stone') + 3, 5, MAXLV); pendingRare.push(lv);
+  addFx({type:'img', k:'star', x:m.x, y:m.y-m.h*0.5, s0:0.4, s1:1.6, life:.9, add:true}); burst(m.x, m.y-m.h*0.5, 40, '#ffe27a'); shake = 22; hitStop = 0.15;
+  if (mode === 'idle') banner('희귀 돌 발견!', lv + '단계 ' + TYPES.stone.names[lv-1] + ' 획득' + (grid.indexOf(null) < 0 ? ' · 칸이 비면 들어가요' : ''));
+  else toast('사냥터에서 희귀 돌 발견! ' + lv + '단계');
+}
+function flushRare(){ while (pendingRare.length && grid.indexOf(null) >= 0){ const i = put({ t:'stone', lv: pendingRare.shift() }); if (i >= 0) pop[i] = { t:0, kind:'evolve' }; } }
 const heroes = {}; // 종류별 영웅 (가진 물건이 있으면 등장)
 for (const t in TYPES) heroes[t] = { t, k:TYPES[t].hero, x:FLOAT_POS[t].x, y:FLOAT_POS[t].y, h:80, timer:rnd(0,0.5), kick:0, mode:'none', appear:0 };
 // 매 프레임: 장착 여부에 따라 영웅으로 설지, 물건만 떠 있을지 정함
@@ -277,11 +296,12 @@ function die(m){
   addFx({type:'img', k:'boom', x:m.x, y:m.y-m.h*0.45, s0:m.boss?1.3:0.45, s1:m.boss?2.4:0.9, life:.42, add:true});
   burst(m.x, m.y-m.h*0.45, m.boss?30:10, m.boss?'#ffcf5a':'#c8ff9a');
   const n = m.boss ? 12 : 2, val = Math.round((m.boss ? 60 : 4) * Math.pow(1.3, stageNo-1));
-  for (let i=0;i<n;i++) coins.push({x:m.x+rnd(-20,20), y:m.y-m.h*0.4, vx:rnd(-240,240), vy:rnd(-600,-380), land:m.y+rnd(-10,20), phase:0, t:0, val});
+  if (mode !== 'idle'){ gold += n*val; updBtns(); } else for (let i=0;i<n;i++) coins.push({x:m.x+rnd(-20,20), y:m.y-m.h*0.4, vx:rnd(-240,240), vy:rnd(-600,-380), land:m.y+rnd(-10,20), phase:0, t:0, val});
   if (m.boss){ shake = 30; hitStop = 0.12; bossOn = false; kills = 0; stageNo++; heroHp = heroMax;
     const t = Object.keys(TYPES)[Math.floor(Math.random()*5)], n = 3 + Math.floor(Math.random()*3); givePieces(t, n, '보스 보상');
     for (let i=0;i<n;i++) pieceFx.push({ t, x:m.x+rnd(-30,30), y:m.y-m.h*0.5, vx:rnd(-200,200), vy:rnd(-500,-300), k:0, delay:i*0.08 }); }
   else if (!bossOn) kills++;
+  if (!m.boss && Math.random() < RARE) rareDrop(m);
   updTop();
 }
 function updTop(){
@@ -308,7 +328,7 @@ function attack(hr){
     let px = hr.x + 40, py = hr.y - hr.h*0.9;
     list.forEach((o, i) => { const c = crit(); const tx = o.x, ty = o.y - o.h*0.55;
       addFx({type:'bolt', x0:px, y0:py, x1:tx, y1:ty, life:0.22, col, delay:i*0.06});
-      setTimeout(() => { addFx({type:'img', k:'bolt', x:tx, y:ty, s0:0.2, s1:0.5, life:.25, add:true}); hit(o, dmg(c) * Math.pow(0.8, i), c, col); if (has('egg') && !o.dead){ o.stun = 0.8 + 0.2*PST('egg'); } }, i*60);
+      setTimeout(() => { const ps = scene; useScene('idle'); addFx({type:'img', k:'bolt', x:tx, y:ty, s0:0.2, s1:0.5, life:.25, add:true}); hit(o, dmg(c) * Math.pow(0.8, i), c, col); if (has('egg') && !o.dead){ o.stun = 0.8 + 0.2*PST('egg'); } useScene(ps); }, i*60);
       px = tx; py = ty; });
     shake = Math.max(shake, 4);
   }
@@ -530,18 +550,18 @@ function drawBars(){
   cx.font='400 24px Jua'; cx.textAlign='center'; cx.lineWidth=6; cx.strokeStyle='#000'; const t='고블린 왕  '+Math.ceil(r*100)+'%'; cx.strokeText(t,W/2,by+22); cx.fillStyle='#fff'; cx.fillText(t,W/2,by+22); }
 
 // ---------- 루프 ----------
-let last = performance.now(), spawnT = 0, freeT = 3, lastTk = '';
+let last = performance.now(), spawnT = 0;
 function frame(now){
   let dt = Math.min(0.05,(now-last)/1000); last = now; time += dt;
   if (hitStop > 0){ hitStop -= dt; dt *= 0.08; }
   if (tickets < TICKET_MAX){ ticketT -= dt; if (ticketT <= 0){ tickets++; ticketT = TICKET_TIME; } }
-  if (mode === 'def'){ dFrame(dt); requestAnimationFrame(frame); return; }
-  const tk = tickets + '|' + Math.ceil(ticketT); if (tk !== lastTk){ lastTk = tk; updTicket(); }
+  useScene('idle'); const sv = [shake, hitStop];
+  updEnter();
   spawnT -= dt; const al = mobs.filter(m=>!m.dead).length;
-  if (!bossOn && kills >= KB){ bossOn = true; spawn(true); banner('보스 등장!', '고블린 왕이 나타났습니다'); shake = 20; updTop(); }
+  if (!bossOn && kills >= KB){ bossOn = true; spawn(true); if (mode === 'idle') banner('보스 등장!', '고블린 왕이 나타났습니다'); shake = 20; updTop(); }
   if (spawnT <= 0 && al < (bossOn ? 2 : 6)){ spawn(false); spawnT = rnd(0.6, 1.2); }
   for (let i=mobs.length-1;i>=0;i--) if (mobs[i].dead > 0.6) mobs.splice(i,1);
-  freeT -= dt; if (freeT <= 0){ freeT = 3; summon(true); }
+  flushRare();
   placeActors(dt);
   chestT -= dt; if (chestT <= 0 && !chest){ chestT = 40; chest = { x:rnd(420, 620), y:rnd(500, 700), t:0 }; toast('이벤트 상자가 나타났어요!'); }
   for (const t in heroes){ const hr = heroes[t]; if (hr.mode === 'none' || hr.appear < 1) continue;
@@ -558,6 +578,11 @@ function frame(now){
   for (let i=flames.length-1;i>=0;i--){ const f = flames[i]; f.t += dt; if (f.t >= f.life){ flames.splice(i,1); continue; }
     f.tick -= dt; if (f.tick <= 0){ f.tick = 0.4; for (const o of mobs) if (!o.dead && Math.hypot(o.x-f.x, (o.y-f.y)*2) < f.r) hit(o, f.v, false); } }
   if (heroHp <= 0){ heroHp = heroMax; mobs.length = 0; shots.length = 0; kills = 0; bossOn = false; stageNo = Math.max(1, stageNo-1); toast('밀려났어요 · 합성으로 더 강해져 보세요'); updTop(); }
+  if (mode !== 'idle'){ shake = sv[0]; hitStop = sv[1]; tickFx(dt); }
+  // 방어전이 열려 있으면 화면과 상관없이 계속 진행
+  if (defOn){ useScene('def'); const s2 = [shake, hitStop]; dUpdate(dt); if (mode !== 'def'){ shake = s2[0]; hitStop = s2[1]; tickFx(dt); } }
+  if (mode === 'def'){ useScene('def'); dRender(dt); requestAnimationFrame(frame); return; }
+  useScene('idle');
   // 그리기
   const sc = cv.width/W; cx.setTransform(sc,0,0,sc,0,0);
   shake *= Math.pow(0.002, dt); const ox = rnd(-shake,shake)*0.5, oy = rnd(-shake,shake)*0.5;
@@ -638,7 +663,17 @@ document.getElementById('paneH').onclick = document.getElementById('paneC').oncl
 setInterval(updPanels, 400);
 
 // ======================= 성벽 방어전 (이벤트 모드) =======================
-let mode = 'idle', tickets = 2, ticketT = 120;
+let mode = 'idle', defOn = false, tickets = 2, ticketT = 120;   // mode = 지금 보고 있는 화면
+function setView(v){ mode = v; document.body.classList.toggle('def', v === 'def'); drag = null; D.drag = null; lastEnter = ''; updEnter(); }
+let lastEnter = '';
+function updEnter(){
+  const txt = defOn ? '⚔ 방어전 보기|' + (D.over ? '결과 확인' : '라운드 ' + D.round + ' · 성벽 ' + Math.ceil(D.wall/D.wallMax*100) + '%')
+                    : '⚔ 성벽 방어전|입장권 ' + tickets + ' / ' + TICKET_MAX + (tickets < TICKET_MAX ? ' · ' + Math.ceil(ticketT) + '초' : '');
+  if (txt === lastEnter) return; lastEnter = txt; const [a, b] = txt.split('|');
+  document.getElementById('bEnter').innerHTML = a + '<small>' + b + '</small>';
+  document.getElementById('bEnter').classList.toggle('live', defOn);
+  const h = document.getElementById('dHuntN'); if (h) h.textContent = document.getElementById('stgName').textContent + ' 사냥 중';
+}
 const TICKET_MAX = 3, TICKET_TIME = 120, D_MAXR = 10;
 const DNS = 6, DSY = 1000, DSX0 = 75, DSDX = 114, DWALL = 830;
 const dSlotX = i => DSX0 + i*DSDX;
@@ -656,9 +691,9 @@ const dMobHp = r => Math.round(mobHp() * 1.6 * Math.pow(1.25, r-1));
 const dBoss = r => r === 5 || r === 10;
 
 function enterDefense(){
+  if (defOn){ setView('def'); return; }
   if (tickets <= 0){ toast('입장권이 없어요 · 2분마다 1장 충전'); return; }
-  tickets--; mode = 'def'; document.body.classList.add('def');
-  fx.length = nums.length = 0; drag = null;
+  tickets--; defOn = true; FXS.def.fx.length = FXS.def.nums.length = 0; useScene('def'); setView('def');
   Object.assign(D, { mobs:[], shots:[], flames:[], round:1, phase:'break', breakT:8, toSpawn:0, spawnT:0, gold:60, sumCost:30, drag:null, over:false, cleared:0 });
   D.wallMax = D.wall = 2000; D.slots.fill(null);
   const list = equipped.length ? equipped : ['stone'];
@@ -666,8 +701,7 @@ function enterDefense(){
   banner('성벽 방어전!', '장착한 영웅들이 성벽 위로 올라갑니다'); updDef();
 }
 function leaveDefense(){
-  mode = 'idle'; document.body.classList.remove('def'); document.getElementById('dRes').classList.remove('on');
-  fx.length = nums.length = 0; updTicket();
+  defOn = false; document.getElementById('dRes').classList.remove('on'); FXS.def.fx.length = FXS.def.nums.length = 0; useScene('idle'); setView('idle');
 }
 function dStartRound(){
   D.phase = 'fight'; D.toSpawn = dBoss(D.round) ? 6 : 8 + D.round*2; D.spawnT = 0.4;
@@ -719,7 +753,7 @@ function dAct(i, u){
   else if (u.t === 'egg'){ const list = D.mobs.filter(o=>!o.dead && o.y > 60).sort((a,b)=>b.y-a.y).slice(0, 1 + u.star);
     let px = x, py = DSY - 170;
     list.forEach((o,k) => { const c = crit(), tx = o.x, ty = o.y - o.h*0.55; addFx({type:'bolt', x0:px, y0:py, x1:tx, y1:ty, life:0.22, col, delay:k*0.06});
-      setTimeout(() => { if (mode !== 'def') return; addFx({type:'img', k:'bolt', x:tx, y:ty, s0:0.2, s1:0.5, life:.25, add:true}); dHit(o, val(c)*Math.pow(0.8,k), c, col); if (dHas('egg') && !o.dead) o.stun = 0.8 + 0.2*PST('egg'); }, k*60);
+      setTimeout(() => { if (!defOn) return; const ps = scene; useScene('def'); addFx({type:'img', k:'bolt', x:tx, y:ty, s0:0.2, s1:0.5, life:.25, add:true}); dHit(o, val(c)*Math.pow(0.8,k), c, col); if (dHas('egg') && !o.dead) o.stun = 0.8 + 0.2*PST('egg'); useScene(ps); }, k*60);
       px = tx; py = ty; }); }
   return true;
 }
@@ -759,6 +793,7 @@ function updDef(){
   document.getElementById('dRepC').textContent = '💰 ' + (40 + D.round*10);
   document.getElementById('dGo').classList.toggle('off', D.phase !== 'break');
 }
+document.getElementById('dHunt').onclick = () => setView('idle');
 function updTicket(){ document.getElementById('enterN').textContent = '입장권 ' + tickets + ' / ' + TICKET_MAX + (tickets < TICKET_MAX ? ' · ' + Math.ceil(ticketT) + '초' : ''); }
 document.getElementById('bEnter').onclick = enterDefense;
 document.getElementById('dSum').onclick = dSummon;
@@ -854,7 +889,7 @@ function dHud(){
     cx.fillStyle='rgba(15,8,6,.85)'; rr(bx-6,by-6,bw+12,40,12); cx.fill(); const gg = cx.createLinearGradient(0,by,0,by+28); gg.addColorStop(0,'#ff6a52'); gg.addColorStop(1,'#a8141a'); cx.fillStyle=gg; rr(bx,by,bw*br,28,8); cx.fill();
     cx.font='400 24px Jua'; cx.textAlign='center'; cx.lineWidth=6; cx.strokeStyle='#000'; const tb='고블린 왕  '+Math.ceil(br*100)+'%'; cx.strokeText(tb,W/2,by+22); cx.fillStyle='#fff'; cx.fillText(tb,W/2,by+22); }
 }
-function dFrame(dt){
+function dUpdate(dt){
   if (!D.over){
     if (D.phase === 'break'){ D.breakT -= dt; document.getElementById('dGoC').textContent = Math.ceil(D.breakT) + '초'; if (D.breakT <= 0) dStartRound(); }
     else { document.getElementById('dGoC').textContent = '전투 중';
@@ -876,12 +911,14 @@ function dFrame(dt){
     if (D.wall <= 0){ D.wall = 0; dFinish(false); }
     updDef();
   }
+}
+function dRender(dt){
   const sc = cv.width/W; cx.setTransform(sc,0,0,sc,0,0);
   shake *= Math.pow(0.002, dt); const ox = rnd(-shake,shake)*0.5, oy = rnd(-shake,shake)*0.5;
   cx.save(); cx.translate(ox,oy); dDraw(dt); cx.restore(); dHud();
 }
 
-if (location.hash === '#test'){ gold = goldShown = 99999; for (const t in own){ own[t].have = true; own[t].star = 1; } equipped = ['orb','sword','egg']; tickets = 3; }
+if (location.hash === '#test'){ gold = goldShown = 99999; for (const t in own){ own[t].have = true; own[t].star = 1; } equipped = ['orb','sword','egg']; tickets = 3; RARE = 0.03; }
 load().then(() => { const l = document.getElementById('load'); l.style.opacity = 0; setTimeout(()=>l.remove(),400); updTop(); updBtns(); requestAnimationFrame(t=>{ last=t; frame(t); }); });
 })();
 </script>
