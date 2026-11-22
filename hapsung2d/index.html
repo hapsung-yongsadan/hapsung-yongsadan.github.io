@@ -1163,12 +1163,12 @@ document.getElementById('bRank').onclick = () => { document.getElementById('myRa
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
-const COUPONS = { '7035109cf6311aef87dba0282078ddc8f8972960024310811785dd4a356b83ee': { coin: 1000000, label: '희망코인 1,000,000개' } };
+const COUPONS = { '7035109cf6311aef87dba0282078ddc8f8972960024310811785dd4a356b83ee': { coin: 1000000, label: '희망코인 1,000,000개' }, 'fdc632d7f40a51dcc8d69f91829181d3c676f0343f30b12b59894abe0cf27774': { coin: 100, label: '희망코인 100개' }, '3e9159a166e4d4e1745fcd9c250a74ad329f236f4124bf3120fa9f4d1fceec5f': { coin: 50, label: '희망코인 50개' }, 'f0bc51cbce83faea723fc65296e4db4309e9a38e2a6d4d72713829a20c60acd2': { coin: 30, label: '희망코인 30개' }, '57d6aec6172e36010df2a2c172eaec97074369eb2e2867d7f9686fb458c71ee5': { coin: 20, label: '희망코인 20개' }, };
 let usedCodes = [];
 async function sha(t){ const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join(''); }
 document.getElementById('cpX').onclick = () => document.getElementById('coupon').classList.remove('on');
 document.getElementById('cpOk').onclick = async () => {
-  const v = document.getElementById('cpIn').value.trim().toUpperCase(), err = document.getElementById('cpErr');
+  const v = document.getElementById('cpIn').value.replace(/\s+/g, '').toUpperCase(), err = document.getElementById('cpErr');
   if (!v){ err.textContent = '번호를 입력해 주세요'; return; }
   let h = ''; try { h = await sha(v); } catch(e){ err.textContent = '이 브라우저에서는 쿠폰을 쓸 수 없어요'; return; }
   const c = COUPONS[h]; if (!c){ err.textContent = '없는 쿠폰 번호예요'; return; }
