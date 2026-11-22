@@ -54,7 +54,24 @@
   .need{display:flex;align-items:center;gap:1cqw;margin-top:.6cqw;font-family:'Noto Sans KR';font-weight:700;font-size:2.6cqw;color:#e8d8b0}
   .need img{width:6.5cqw;height:6.5cqw}
   .need .ok{color:#9dff9a}.need .ng{color:#ff8a7a}
-  body.def .idle{display:none!important}
+  body.def .idle, body.raid .idle{display:none!important}
+  .rui{display:none!important}
+  body.raid .rui{display:block!important}
+  #bRaid{position:absolute;right:3%;top:21.4%;z-index:7;font-family:Jua;font-size:3.6cqw;color:#fff;border-radius:14px;padding:1.4cqw 3cqw 1cqw;border:2px solid #d8a0ff;
+    background:linear-gradient(180deg,#7a2ab0,#3a0c5e);box-shadow:0 4px 0 #22063a,0 0 16px rgba(180,90,255,.5);line-height:1.1;text-align:center}
+  #bRaid small{display:block;font-size:2.6cqw;color:#efd8ff}
+  #rbImg{width:42cqw;height:42cqw;object-fit:contain;align-self:center;filter:drop-shadow(0 2cqw 2cqw rgba(0,0,0,.6))}
+  .rbline{font-family:Jua;font-size:3.4cqw;color:#e8d8b0;margin:.6cqw 0}
+  #rbTier{font-family:Jua;font-size:3.6cqw;color:#fff;margin:1.5cqw 0;text-align:center}
+  #rbTier b{color:#ffd978;font-weight:400}
+  #rbTier small{display:block;font-size:2.8cqw;color:#bba887}
+  #rbTier .bar{height:2cqw;background:rgba(0,0,0,.5);border-radius:9px;overflow:hidden;margin:1cqw 4cqw .6cqw}
+  #rbTier .bar b{display:block;height:100%;background:linear-gradient(90deg,#c78bff,#ff6a9a)}
+  #rbList{overflow-y:auto;max-height:30cqh;touch-action:pan-y;margin:1cqw 0 2cqw}
+  #rbGo:disabled{filter:grayscale(1) brightness(.6)}
+  .rbinfo{font-size:2.7cqw;color:#bba887;margin-bottom:2cqw;line-height:1.5}
+  #rrDmg{font-family:Jua;font-size:11cqw;color:#fff;text-shadow:0 4px 0 #5a1500}
+  body.raid .quit.rq{display:block!important}
   .dui{display:none!important}
   body.def .dui.btns{display:flex!important}
   body.def .dui.quit{display:block!important}
@@ -155,6 +172,15 @@
     <button id="bAtk">골드 강화<small id="cAtk">공격력 · 속도 · 치명타</small></button>
   </div>
   <button id="bRank" class="idle">🏆 랭킹</button>
+  <button id="bRaid" class="idle">👹 주간 레이드<small>모두 함께 보스 공략</small></button>
+  <button class="rui quit rq" id="rQuit">그만하기</button>
+  <div class="modal" id="raidL"><div class="box"><div class="mh">👹 주간 보스 레이드<button id="rbX">✕</button></div>
+    <img id="rbImg" alt=""><div class="mh" id="rbName" style="font-size:7cqw"></div>
+    <div class="rbline" id="rbLeft"></div><div class="rbline" id="rbMine" style="color:#cfe8ff"></div>
+    <div id="rbTier"></div><div id="rbList"></div>
+    <div class="rbinfo">하루 3번 · 30초 동안 때린 피해가 이번 주 누적에 더해져요<br>다음 주에 순위 보상 (1위 💎50+10단계 돌 · 2~3위 💎30 · 4~10위 💎15 · 참여 💎5)<br>+ 모두가 깬 단계마다 💎2</div>
+    <button id="rbGo" class="big">⚔ 도전하기</button></div></div>
+  <div class="modal" id="raidR"><div class="box"><div class="mh">레이드 종료!</div><p>이번 도전 피해</p><div id="rrDmg"></div><p id="rrSub"></p><div id="rrList" class="list"></div><button id="rrOk" class="big">확인</button></div></div>
   <button id="bQ" class="idle">⚙ 효과 높음</button>
   <div class="modal" id="rank"><div class="box"><div class="mh">🏆 사냥터 랭킹<button id="rankX">✕</button></div><div class="mysub" id="myRank"></div><div id="rankL"></div></div></div>
   <div class="modal" id="nick"><div class="box"><div class="mh">환영해요, 용사님!</div><p>랭킹에 표시될 이름을 정해주세요</p>
@@ -362,7 +388,7 @@ const mobKey = (a, i) => IMG['a'+pad2(a)+'_m'+i] ? 'a'+pad2(a)+'_m'+i : 'a00_m'+
 const bossKey = a => IMG['boss'+pad2(a)] ? 'boss'+pad2(a) : 'boss00';
 const mobs = [], shots = [], coins = [];
 // 사냥터와 방어전이 동시에 돌아가므로 이펙트·숫자 목록을 장면별로 따로 둠
-const FXS = { idle:{fx:[],nums:[]}, def:{fx:[],nums:[]} };
+const FXS = { idle:{fx:[],nums:[]}, def:{fx:[],nums:[]}, raid:{fx:[],nums:[]} };
 let fx = FXS.idle.fx, nums = FXS.idle.nums, scene = 'idle';
 function useScene(sc){ scene = sc; fx = FXS[sc].fx; nums = FXS[sc].nums; }
 function tickFx(dt){ for (let i=fx.length-1;i>=0;i--){ const f = fx[i]; f.t += dt; if (f.type === 'spark'){ f.x += f.vx*dt; f.y += f.vy*dt; } if ((f.t-(f.delay||0))/f.life >= 1) fx.splice(i,1); }
@@ -574,7 +600,7 @@ function updBtns(){ document.getElementById('cSum').textContent = '💰 ' + sumC
 
 function lp(e){ const r = cv.getBoundingClientRect(); return { x:(e.clientX - r.left) / r.width * W, y:(e.clientY - r.top) / r.height * H }; }
 function slotAt(p){ const c = Math.floor((p.x - GX)/CW), r = Math.floor((p.y - GY)/CH); if (c<0||c>=COLS||r<0||r>=ROWS) return -1; return r*COLS + c; }
-cv.addEventListener('pointerdown', e => { const p = lp(e), i = slotAt(p); if (mode === 'def'){ dDown(p, e); return; }
+cv.addEventListener('pointerdown', e => { const p = lp(e), i = slotAt(p); if (mode === 'raid'){ raidTap(p); return; } if (mode === 'def'){ dDown(p, e); return; }
   if (useMode){ if (i >= 0 && grid[i]){ if (grid[i].t === 'stone'){ toast('진화 물건에만 쓸 수 있어요'); return; } if (grid[i].lv >= MAXLV){ toast('이미 최고 단계예요'); return; } useBoost(i); } return; }
   if (chest && Math.hypot(p.x - chest.x, p.y - (chest.y - 50)) < 90){ openChest(); return; }
   if (i >= 0 && grid[i]){ drag = { i, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); } });
@@ -805,6 +831,7 @@ function frame(now){
   // 방어전이 열려 있으면 화면과 상관없이 계속 진행
   if (defOn){ useScene('def'); const s2 = [shake, hitStop]; dUpdate(dt); if (mode !== 'def'){ shake = s2[0]; hitStop = s2[1]; tickFx(dt); } }
   if (mode === 'def'){ useScene('def'); dRender(dt); requestAnimationFrame(frame); return; }
+  if (mode === 'raid'){ useScene('raid'); raidUpdate(dt); raidRender(dt); requestAnimationFrame(frame); return; }
   useScene('idle');
   // 그리기
   const sc = cv.width/W; cx.setTransform(sc,0,0,sc,0,0);
@@ -951,7 +978,7 @@ document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click
 
 // ======================= 성벽 방어전 (이벤트 모드) =======================
 let mode = 'idle', defOn = false, tickets = 2, ticketT = 120;   // mode = 지금 보고 있는 화면
-function setView(v){ mode = v; document.body.classList.toggle('def', v === 'def'); drag = null; D.drag = null; lastEnter = ''; updEnter(); }
+function setView(v){ mode = v; document.body.classList.toggle('def', v === 'def'); document.body.classList.toggle('raid', v === 'raid'); drag = null; D.drag = null; lastEnter = ''; updEnter(); }
 let lastEnter = '';
 function updEnter(){
   const txt = defOn ? '⚔ 방어전 보기|' + (D.over ? '결과 확인' : '라운드 ' + D.round + ' · 성벽 ' + Math.ceil(D.wall/D.wallMax*100) + '%')
@@ -1222,7 +1249,7 @@ let pid = '', nick = '', bestStage = 1, rankDirty = true;
 const lsGet = k => { try { return localStorage.getItem(k); } catch(e){ return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e){} };
 function snapshot(){ return { v:1, gold, coin, stageNo, bestStage, sumCost, atkLv, atkCost, grid: grid.map(x => x ? [x.t, x.lv] : 0), own, equipped, inv, tickets, ticketT,
-  pendingRare, pid, nick, usedCodes, up, lastSeen: Date.now() }; }
+  pendingRare, pid, nick, usedCodes, up, raid: raidSave, lastSeen: Date.now() }; }
 function saveGame(){ if (IS_TEST || !pid) return; lsSet(SAVE_KEY, JSON.stringify(snapshot())); }
 function loadGame(){
   let d = null; try { d = JSON.parse(lsGet(SAVE_KEY) || 'null'); } catch(e){}
@@ -1233,7 +1260,7 @@ function loadGame(){
   equipped = (d.equipped || ['stone']).filter(t => own[t] && own[t].have);
   Object.assign(inv, d.inv || {}); tickets = d.tickets ?? 2; ticketT = d.ticketT ?? TICKET_TIME;
   pendingRare.length = 0; (d.pendingRare || []).forEach(v => pendingRare.push(v));
-  pid = d.pid || ''; nick = d.nick || ''; usedCodes = d.usedCodes || []; if (d.up) Object.assign(up, d.up); atkLv = Math.min(atkLv, 21);
+  pid = d.pid || ''; nick = d.nick || ''; usedCodes = d.usedCodes || []; if (d.up) Object.assign(up, d.up); if (d.raid) Object.assign(raidSave, d.raid); atkLv = Math.min(atkLv, 21);
   return d;
 }
 // 자리를 비운 동안: 지금 스테이지 기준 초당 0.25마리 사냥으로 계산, 최대 8시간
@@ -1299,12 +1326,170 @@ document.getElementById('nickOk').onclick = () => {
   document.getElementById('nick').classList.remove('on'); saveGame(); pushRank(); toast(nick + '님, 환영해요!');
 };
 
+
+// ======================= 주간 보스 레이드 =======================
+// 매주 월요일 0시(한국 시간) 새 보스. 하루 3번 도전, 한 번에 30초. 모두의 피해를 합쳐 보스 단계를 깨고, 개인 피해 순위로 주간 보상.
+const RAID_TRIES = 3, RAID_TIME = 30;
+const RAID_TIERS = [1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18];   // 모두의 누적 피해 목표 (단계별)
+const kstDay = () => Math.floor((Date.now() + 9*3600e3) / 86400e3);
+const raidWeek = () => Math.floor((kstDay() + 3) / 7);                       // 1970-01-01은 목요일 → 월요일 시작
+const raidLeftMs = () => ((raidWeek()+1)*7 - 3) * 86400e3 - 9*3600e3 - Date.now();
+const raidBossIdx = wk => ((wk % 10) + 10) % 10;
+let raidSave = { wk:-1, dmg:0, best:0, day:-1, left:RAID_TRIES, claimed:-1 };
+const R = { on:false, t:0, total:0, shots:[], bossFlash:0, sq:0, shield:0, shieldT:7, combo:0, comboT:0, tapCd:0, over:false, rows:null };
+function raidFix(){ const wk = raidWeek(), d = kstDay();
+  if (raidSave.wk !== wk){ raidSave.prevWk = raidSave.wk; raidSave.prevDmg = raidSave.dmg; raidSave.wk = wk; raidSave.dmg = 0; raidSave.best = 0; }
+  if (raidSave.day !== d){ raidSave.day = d; raidSave.left = RAID_TRIES; } }
+const raidBossName = () => BOSS_NAMES[raidBossIdx(raidWeek())];
+const raidBossKey = () => { const k = 'boss' + pad2(raidBossIdx(raidWeek())); return IMG[k] ? k : 'boss00'; };
+function tierOf(total){ let n = 0; while (n < RAID_TIERS.length && total >= RAID_TIERS[n]) n++; return n; }
+
+// ---- 서버 ----
+async function raidPush(){
+  if (IS_TEST || !pid || !nick || raidSave.dmg <= 0) return;
+  const body = { fields: { nick:{stringValue:nick}, dmg:{doubleValue:raidSave.dmg}, best:{doubleValue:raidSave.best}, updated:{integerValue:String(Date.now())} } };
+  try { await fetch(FB_DOC + '/h2d_raid_w' + raidSave.wk + '/' + pid + '?key=' + FB_KEY, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); } catch(e){}
+}
+async function raidFetch(wk){
+  const r = await fetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_raid_w' + wk}], orderBy:[{field:{fieldPath:'dmg'}, direction:'DESCENDING'}], limit:100 } }) });
+  const arr = await r.json(); if (!r.ok) throw new Error();
+  return arr.filter(e => e.document).map(e => { const f = e.document.fields || {};
+    return { id: e.document.name.split('/').pop(), nick: f.nick?.stringValue || '???', dmg: +(f.dmg?.doubleValue ?? f.dmg?.integerValue ?? 0) }; });
+}
+// 지난주 보상 받기 (순위 보상 + 모두가 깬 단계 보상)
+async function raidClaim(){
+  if (IS_TEST || !pid) return; raidFix();
+  const pw = raidWeek() - 1; if (raidSave.claimed >= pw || raidSave.prevWk !== pw || !(raidSave.prevDmg > 0)) return;
+  let rows; try { rows = await raidFetch(pw); } catch(e){ return; }
+  const rank = rows.findIndex(o => o.id === pid) + 1, total = rows.reduce((a,o) => a + o.dmg, 0), tier = tierOf(total);
+  const rc = rank === 1 ? 50 : rank <= 3 ? 30 : rank <= 10 ? 15 : 5, tc = tier * 2, c = rc + tc;
+  raidSave.claimed = pw; coin += c; updCoin(); if (rank === 1 && grid.indexOf(null) >= 0) put({ t:'stone', lv:MAXLV });
+  document.getElementById('offT').textContent = '지난주 레이드 결과 (' + BOSS_NAMES[raidBossIdx(pw)] + ')';
+  document.getElementById('offL').innerHTML = '<div>내 순위 ' + (rank ? rank + '위' : '집계 밖') + ' · 💎 +' + rc + (rank === 1 ? ' · 10단계 돌' : '') + '</div><div>모두가 ' + tier + '단계까지 격파 · 💎 +' + tc + '</div>';
+  document.getElementById('offline').classList.add('on'); saveGame();
+}
+
+// ---- 로비 ----
+async function openRaid(){
+  raidFix(); needArea(raidBossIdx(raidWeek()));
+  const ms = raidLeftMs(), d = Math.floor(ms/86400e3), h = Math.floor(ms%86400e3/3600e3);
+  document.getElementById('rbName').textContent = raidBossName();
+  document.getElementById('rbImg').src = '../proto2d/img/boss' + pad2(raidBossIdx(raidWeek())) + '.png';
+  document.getElementById('rbLeft').textContent = '남은 기간 ' + d + '일 ' + h + '시간 · 오늘 도전 ' + raidSave.left + ' / ' + RAID_TRIES;
+  document.getElementById('rbMine').textContent = '내 이번 주 누적 피해 ' + fmt(Math.round(raidSave.dmg)) + ' · 최고 ' + fmt(Math.round(raidSave.best));
+  const go = document.getElementById('rbGo'); go.disabled = raidSave.left <= 0; go.textContent = raidSave.left > 0 ? '⚔ 도전하기 (30초)' : '내일 다시 도전할 수 있어요';
+  document.getElementById('raidL').classList.add('on');
+  const list = document.getElementById('rbList'), tierEl = document.getElementById('rbTier');
+  list.innerHTML = '<div class="rk-msg">불러오는 중…</div>';
+  await raidPush();
+  try { const rows = await raidFetch(raidWeek()); R.rows = rows;
+    const total = rows.reduce((a,o) => a + o.dmg, 0), tier = tierOf(total), next = RAID_TIERS[Math.min(tier, RAID_TIERS.length-1)];
+    tierEl.innerHTML = '모두의 피해 <b>' + fmt(Math.round(total)) + '</b> · <b>' + tier + '</b> / 10단계 격파' + (tier < 10 ? '<div class="bar"><b style="width:' + Math.min(100, total/next*100) + '%"></b></div><small>다음 단계까지 ' + fmt(Math.round(next - total)) + '</small>' : '');
+    list.innerHTML = rows.length ? rows.slice(0, 30).map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + (i < 3 ? ['🥇','🥈','🥉'][i] : i+1) + '</b><span>' + esc(o.nick) + '</span><em>' + fmt(Math.round(o.dmg)) + '</em></div>').join('')
+                            : '<div class="rk-msg">아직 아무도 도전하지 않았어요. 첫 번째로 때려보세요!</div>';
+  } catch(e){ tierEl.textContent = ''; list.innerHTML = '<div class="rk-msg">레이드 서버에 연결하지 못했어요.<br>도전은 할 수 있고, 기록은 연결되면 올라가요.</div>'; }
+}
+document.getElementById('bRaid').onclick = openRaid;
+document.getElementById('rbX').onclick = () => document.getElementById('raidL').classList.remove('on');
+document.getElementById('rbGo').onclick = () => { raidFix(); if (raidSave.left <= 0) return; raidSave.left--; document.getElementById('raidL').classList.remove('on'); startRaid(); };
+
+// ---- 전투 ----
+function raidActors(){ const list = [];
+  for (const t in TYPES){ const lv = bestOf(t) || (t === 'stone' ? 1 : 0); if (!lv) continue; list.push({ t, lv, hero: equipped.includes(t), timer: rnd(0,0.5), kick:0 }); }
+  const n = list.length; list.forEach((a,i) => { a.x = W/2 + (i - (n-1)/2) * 132; a.y = a.hero ? 1040 : 990; }); return list; }
+function startRaid(){
+  Object.assign(R, { on:true, t:RAID_TIME, total:0, shots:[], bossFlash:0, sq:0, shield:0, shieldT:7, combo:0, comboT:0, tapCd:0, over:false, actors: raidActors(), weak:false });
+  FXS.raid.fx.length = FXS.raid.nums.length = 0; useScene('raid'); setView('raid');
+  banner(raidBossName() + ' 레이드!', '30초 동안 최대한 많이 때리세요 · 보스를 직접 눌러도 피해!');
+}
+const raidBoss = { x: W/2, y: 760, h: 520 };
+function raidHit(v, crit, x, y){
+  if (R.shield > 0) v *= 0.2; if (R.weak) v *= 2;
+  v = Math.round(v); R.total += v; R.bossFlash = Math.min(1, R.bossFlash + 0.5); R.sq = 1;
+  num(x + rnd(-60,60), y + rnd(-40,20), v, crit, R.shield > 0 ? '#9fd4ff' : null);
+  if (crit){ shake = Math.max(shake, 8); burst(x, y, 8, '#ffe08a'); }
+}
+function raidUpdate(dt){
+  if (!R.on || R.over) return;
+  R.t -= dt; R.bossFlash = Math.max(0, R.bossFlash - dt*6); R.sq = Math.max(0, R.sq - dt*5); R.tapCd -= dt;
+  R.comboT -= dt; if (R.comboT <= 0) R.combo = 0;
+  // 보스 패턴: 7초마다 1.5초 방패(피해 80% 감소), 마지막 6초 약점 노출(피해 2배)
+  R.shieldT -= dt; if (R.shieldT <= 0 && R.t > 7){ R.shieldT = 7; R.shield = 1.5; callout(raidBoss.x, raidBoss.y - raidBoss.h - 20, '방어 태세!', '#9fd4ff'); }
+  R.shield = Math.max(0, R.shield - dt);
+  if (!R.weak && R.t <= 6){ R.weak = true; R.shield = 0; banner('약점 노출!', '마지막 6초 · 모든 피해 2배!'); shake = 18; }
+  const by = raidBoss.y - raidBoss.h*0.5;
+  for (const a of R.actors){ a.kick = Math.max(0, a.kick - dt*6); a.timer -= dt; if (a.timer > 0) continue; a.timer = cdOf(a.t) * rnd(0.9,1.1); a.kick = 1;
+    const c = Math.random() < 0.18 + critAdd() + (has('arrow') ? (5+3*PST('arrow'))/100 : 0);
+    const v = dmgOf(a.t, a.lv) * bonus(a.t) * atkMul(up.atk) * (c ? critMul() : 1) * rnd(0.9,1.1) * (a.t === 'arrow' ? 1 + Math.floor(a.lv/3) : a.t === 'egg' ? 1.6 : 1);
+    R.shots.push({ t:a.t, lv:a.lv, x:a.x, y:a.y - 120, ox:a.x, oy:a.y - 120, tx: raidBoss.x + rnd(-110,110), ty: by + rnd(-120,120), k:0, v, c }); }
+  for (let i=R.shots.length-1;i>=0;i--){ const s = R.shots[i]; s.k += dt/0.32; const u = Math.min(1, s.k);
+    s.x = s.ox + (s.tx-s.ox)*u; s.y = s.oy + (s.ty-s.oy)*u - Math.sin(u*Math.PI)*80;
+    if (u >= 1){ R.shots.splice(i,1); addFx({type:'img', k: s.t === 'orb' ? 'boom' : s.t === 'sword' ? 'slash' : 'shock', x:s.tx, y:s.ty, s0:0.15, s1: s.t === 'orb' ? 0.7 : 0.45, life:.25, add:true}); raidHit(s.v, s.c, s.tx, s.ty); } }
+  if (R.t <= 0) endRaid();
+}
+// 보스를 직접 누르면: 영웅 1회 공격의 30% 피해, 빠르게 누를수록 콤보
+function raidTap(p){
+  if (!R.on || R.over) return;
+  if (Math.abs(p.x - raidBoss.x) > 250 || p.y < raidBoss.y - raidBoss.h - 20 || p.y > raidBoss.y + 20 || R.tapCd > 0) return;
+  R.tapCd = 0.07; R.combo++; R.comboT = 0.6;
+  let best = 0; for (const a of R.actors) best = Math.max(best, dmgOf(a.t, a.lv) * bonus(a.t));
+  const v = best * atkMul(up.atk) * 0.3 * (1 + Math.min(R.combo, 50) * 0.02);
+  addFx({type:'img', k:'shock', x:p.x, y:p.y, s0:0.1, s1:0.4, life:.2, add:true}); raidHit(v, false, p.x, p.y - 30);
+}
+function endRaid(){
+  R.over = true; R.shots.length = 0; const dmg = R.total;
+  raidSave.dmg += dmg; raidSave.best = Math.max(raidSave.best, dmg);
+  const g = Math.round(300 * rewardMul() * goldMul()), pc = 1 + Math.floor(Math.random()*3), pt = Object.keys(TYPES)[Math.floor(Math.random()*5)];
+  gold += g; own[pt].pieces += pc; coin += 1; updCoin(); updBtns(); sig = ''; saveGame(); raidPush();
+  document.getElementById('rrDmg').textContent = fmt(Math.round(dmg));
+  document.getElementById('rrSub').textContent = '이번 주 누적 ' + fmt(Math.round(raidSave.dmg)) + ' · 남은 도전 ' + raidSave.left + '번';
+  document.getElementById('rrList').innerHTML = '<div>💰 골드 +' + fmt(g) + '</div><div>◆ ' + TYPES[pt].who + ' 조각 +' + pc + '</div><div>💎 희망코인 +1</div>';
+  document.getElementById('raidR').classList.add('on');
+}
+document.getElementById('rrOk').onclick = () => { document.getElementById('raidR').classList.remove('on'); R.on = false; FXS.raid.fx.length = FXS.raid.nums.length = 0; useScene('idle'); setView('idle'); openRaid(); };
+document.getElementById('rQuit').onclick = () => { if (R.on && !R.over){ R.t = 0; endRaid(); } };
+function raidRender(dt){
+  const sc = cv.width/W; cx.setTransform(sc,0,0,sc,0,0);
+  shake *= Math.pow(0.002, dt); const ox = rnd(-shake,shake)*0.5, oy = rnd(-shake,shake)*0.5;
+  cx.save(); cx.translate(ox, oy);
+  const gk = 'g' + pad2(raidBossIdx(raidWeek())), gi = IMG[gk] || IMG.g00;
+  if (gi){ if (!PATS['r' + gk]){ const c = document.createElement('canvas'); c.width = c.height = 384; c.getContext('2d').drawImage(gi,0,0,384,384); PATS['r'+gk] = cx.createPattern(c,'repeat'); } cx.fillStyle = PATS['r'+gk]; cx.fillRect(-20,-20,W+40,H+40); }
+  cx.fillStyle = R.weak ? 'rgba(120,10,0,.45)' : 'rgba(20,0,10,.5)'; cx.fillRect(-20,-20,W+40,H+40);
+  // 보스
+  const b = raidBoss, br = Math.sin(time*2)*0.02, bk = raidBossKey();
+  shadow(b.x, b.y, 230, 1);
+  if (R.shield > 0){ cx.save(); cx.globalCompositeOperation = 'lighter'; cx.globalAlpha = 0.35 + 0.15*Math.sin(time*20); cx.strokeStyle = '#9fd4ff'; cx.lineWidth = 14; cx.beginPath(); cx.ellipse(b.x, b.y - b.h*0.5, 280, 300, 0, 0, Math.PI*2); cx.stroke(); cx.restore(); }
+  drawImgFoot(bk, b.x, b.y, b.h, { sx: 1 + br*0.5 + R.sq*0.06, sy: 1 - br - R.sq*0.05, flash: Math.max(R.bossFlash*0.22, R.weak ? 0.06 + 0.05*Math.sin(time*12) : 0), flip: true });
+  // 아군
+  for (const a of R.actors){ const k = a.kick;
+    shadow(a.x, a.y, a.hero ? 55 : 28, 1);
+    if (a.hero) drawImgFoot(heroKey(a.t, own[a.t].star), a.x - 6*k, a.y - 6*k, 170, { sy: 1 + Math.sin(time*3 + a.x)*0.02 });
+    else drawItem(a.t, a.lv, a.x, a.y - 60 + Math.sin(time*2.2 + a.x)*8, 30, 0); }
+  for (const s of R.shots) drawItem(s.t, s.lv, s.x, s.y, 20, s.k * 8);
+  drawFx(dt); drawNums(dt);
+  cx.restore();
+  // 상단: 시간 · 누적 피해 · 콤보
+  cx.save(); cx.textAlign = 'center'; cx.lineJoin = 'round';
+  cx.fillStyle = 'rgba(0,0,0,.65)'; rr(60, 60, W-120, 26, 12); cx.fill();
+  cx.fillStyle = R.weak ? '#ff6a3a' : '#ffd040'; rr(63, 63, (W-126)*clamp(R.t/RAID_TIME,0,1), 20, 10); cx.fill();
+  cx.font = '400 22px Jua'; cx.lineWidth = 5; cx.strokeStyle = '#000'; const tt = Math.max(0, Math.ceil(R.t)) + '초'; cx.strokeText(tt, W/2, 81); cx.fillStyle = '#fff'; cx.fillText(tt, W/2, 81);
+  cx.font = '400 30px Jua'; cx.lineWidth = 6; cx.strokeText(raidBossName(), W/2, 128); cx.fillStyle = '#ffe2a0'; cx.fillText(raidBossName(), W/2, 128);
+  cx.font = '400 60px Jua'; cx.lineWidth = 10; const tot = fmt(Math.round(R.total)); cx.strokeText(tot, W/2, 196); cx.fillStyle = '#fff'; cx.fillText(tot, W/2, 196);
+  cx.font = '400 22px Jua'; cx.lineWidth = 5; cx.strokeText('이번 도전 피해', W/2, 228); cx.fillStyle = '#d8c39a'; cx.fillText('이번 도전 피해', W/2, 228);
+  if (R.combo >= 3){ cx.font = '400 40px Jua'; cx.lineWidth = 8; const ct = R.combo + ' 콤보!'; cx.strokeText(ct, W - 130, 300); cx.fillStyle = '#ffb030'; cx.fillText(ct, W - 130, 300); }
+  cx.font = '400 26px Jua'; cx.lineWidth = 6; const hint = R.shield > 0 ? '방어 태세 · 피해 80% 감소' : R.weak ? '약점 노출 · 피해 2배!' : '보스를 연타하면 추가 피해!';
+  cx.strokeText(hint, W/2, 1180); cx.fillStyle = R.shield > 0 ? '#9fd4ff' : R.weak ? '#ff8a5a' : '#ffe27a'; cx.fillText(hint, W/2, 1180);
+  cx.restore();
+}
+
 // ---- 시작 ----
 if (!IS_TEST){
   document.getElementById('bTest').style.display = 'none';
   const d = loadGame();
   if (d) offlineReward(d); else { pid = ''; }
   if (!nick) document.getElementById('nick').classList.add('on');
+  raidFix(); setTimeout(raidClaim, 2500);
   layout(); updTop(); updBtns(); updCoin(); sig = '';
   setInterval(() => { if (stageNo > bestStage){ bestStage = stageNo; rankDirty = true; pushRank(); } saveGame(); }, 5000);
   setInterval(() => { if (rankDirty) pushRank(); rankDirty = true; }, 60000);
