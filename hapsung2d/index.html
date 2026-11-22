@@ -139,7 +139,7 @@
   .modal p{font-family:Jua;font-size:4cqw;color:#e8d8b0;margin:2cqw 0 3cqw}
   .modal .list{font-family:Jua;font-size:4.6cqw;line-height:1.7;margin-bottom:3cqw}
   .modal .big{font-family:Jua;font-size:5cqw;color:#fff;border:2px solid #f2c86a;border-radius:14px;padding:2.4cqw 8cqw;background:linear-gradient(180deg,#8a5d22,#4a2f10);align-self:center}
-  #nickIn{font-family:Jua;font-size:5cqw;text-align:center;padding:2.4cqw;border-radius:12px;border:2px solid #f2c86a;background:#120c08;color:#fff;margin-bottom:1.5cqw;user-select:text;-webkit-user-select:text}
+  #nickIn{font-family:Jua;font-size:max(16px,5cqw);text-align:center;padding:2.4cqw;border-radius:12px;border:2px solid #f2c86a;background:#120c08;color:#fff;margin-bottom:1.5cqw;user-select:text;-webkit-user-select:text}
   #nickErr{font-family:Jua;font-size:3.4cqw;color:#ff8a7a;min-height:5cqw}
   .mysub{font-family:Jua;font-size:3.4cqw;color:#cfe8ff;margin:1.5cqw 0 2cqw}
   #rankL{overflow-y:auto;flex:1;touch-action:pan-y}
@@ -150,7 +150,7 @@
   .rk em small{display:block;font-size:2.8cqw;color:#b8a88a}
   .rk.me{background:rgba(242,200,106,.18);border-radius:10px}
   .rk-msg{font-family:Jua;font-size:3.8cqw;color:#d8c39a;padding:6cqw 0}
-  .tin{font-family:Jua;font-size:5cqw;text-align:center;padding:2.4cqw;border-radius:12px;border:2px solid #f2c86a;background:#120c08;color:#fff;margin-bottom:1.5cqw;user-select:text;-webkit-user-select:text}
+  .tin{font-family:Jua;font-size:max(16px,5cqw);text-align:center;padding:2.4cqw;border-radius:12px;border:2px solid #f2c86a;background:#120c08;color:#fff;margin-bottom:1.5cqw;user-select:text;-webkit-user-select:text}
   .terr{font-family:Jua;font-size:3.4cqw;color:#ff8a7a;min-height:5cqw}
   #rateTip{position:absolute;left:3%;right:3%;top:56.2cqh;z-index:9;display:none;text-align:center;padding:1.6cqw 2cqw;border-radius:12px;font-family:Jua;font-size:3.8cqw;color:#fff;
     background:rgba(20,14,10,.94);border:2px solid #f2c86a;box-shadow:0 4px 14px rgba(0,0,0,.6);pointer-events:none}
@@ -158,6 +158,10 @@
   #rateTip b{font-size:5.4cqw;font-weight:400}
   #rateTip.g b{color:#9dff9a} #rateTip.y b{color:#ffe27a} #rateTip.r b{color:#ff8a7a}
   #rateTip.dim{opacity:.85;font-size:3.3cqw} #rateTip.dim b{font-size:4cqw;color:#ffe27a}
+  /* 두 번 눌러 확대 막기 (아이폰 사파리) */
+  button, a, .pane, .modal, .box, .row, .btns, .top, #stage{touch-action:manipulation}
+  .pane, #rankL, #rbList, #twList, #growB{touch-action:pan-y}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   #load{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#120c08;font-family:Jua;font-size:6cqw;color:#f2c86a;transition:opacity .4s}
 </style>
 </head>
@@ -1727,6 +1731,19 @@ if (!IS_TEST){
   addEventListener('pagehide', saveGame);
 }
 
+// ---- 확대 막기: 두 번 탭·두 손가락 확대 방지, 이미 확대됐으면 원래대로 ----
+(() => {
+  let lastTouch = 0;
+  document.addEventListener('touchend', e => { const now = Date.now(); if (now - lastTouch < 350 && !e.target.closest('input,textarea,button,a')){ e.preventDefault(); } lastTouch = now; }, { passive:false });
+  document.addEventListener('dblclick', e => e.preventDefault(), { passive:false });
+  ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
+  document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
+  const vp = document.querySelector('meta[name=viewport]');
+  const resetZoom = () => { if (!vp) return; vp.setAttribute('content', 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover'); };
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (visualViewport.scale > 1.01){ resetZoom(); window.scrollTo(0,0); } });
+  // 입력칸에서 나오면 확대 원래대로 (아이폰은 글자 입력 때 자동 확대함)
+  document.addEventListener('focusout', e => { if (e.target.matches && e.target.matches('input')){ resetZoom(); setTimeout(() => window.scrollTo(0,0), 50); } });
+})();
 load().then(() => { const l = document.getElementById('load'); l.style.opacity = 0; setTimeout(()=>l.remove(),400); updTop(); updBtns(); requestAnimationFrame(t=>{ last=t; frame(t); }); });
 })();
 </script>
