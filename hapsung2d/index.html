@@ -335,8 +335,8 @@ const up = { atk:0, crit:0, cdmg:0, gold:0 };
 const UPG = {
   atk:  { name:'공격력',     icon:'⚔', max:9999, desc: l => '모든 피해 ×' + fmt2(atkMul(l)), next: l => '×' + fmt2(atkMul(l+1)), cost: l => Math.round(80 * Math.pow(1.17, l)) },
   spd:  { name:'공격 속도',   icon:'⚡', max:20,   desc: l => '공격 간격 -' + Math.round((1-spdMul(l))*100) + '%', next: l => '-' + Math.round((1-spdMul(l+1))*100) + '%', cost: l => Math.round(60 * Math.pow(1.6, l)) },
-  crit: { name:'치명타 확률', icon:'🎯', max:50,   desc: l => '+' + (l*0.6).toFixed(1) + '%', next: l => '+' + ((l+1)*0.6).toFixed(1) + '%', cost: l => Math.round(150 * Math.pow(1.22, l)) },
-  cdmg: { name:'치명타 피해', icon:'💥', max:9999, desc: l => '×' + (2.3 + l*0.1).toFixed(1), next: l => '×' + (2.3 + (l+1)*0.1).toFixed(1), cost: l => Math.round(120 * Math.pow(1.19, l)) },
+  crit: { name:'치명타 확률', icon:'🎯', max:50,   desc: l => '+' + (l*0.6).toFixed(1) + '%', next: l => '+' + ((l+1)*0.6).toFixed(1) + '%', cost: l => Math.round(1000 * Math.pow(1.5, l)) },
+  cdmg: { name:'치명타 피해', icon:'💥', max:9999, desc: l => '×' + (2.3 + l*0.1).toFixed(1), next: l => '×' + (2.3 + (l+1)*0.1).toFixed(1), cost: l => Math.round(500 * Math.pow(1.32, l)) },
   gold: { name:'골드 획득',   icon:'💰', max:100,  desc: l => '+' + (l*5) + '%', next: l => '+' + ((l+1)*5) + '%', cost: l => Math.round(200 * Math.pow(1.2, l)) },
 };
 const atkMul = l => Math.pow(1.1, l), spdMul = l => Math.pow(0.96, l);
