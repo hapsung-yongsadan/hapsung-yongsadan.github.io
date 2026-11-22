@@ -1861,7 +1861,7 @@ async function loadChat(){
 async function sendChat(){
   const inp = document.getElementById('chatIn'), text = inp.value.trim();
   if (!text) return; if (!nick){ toast('닉네임을 먼저 정해주세요'); return; }
-  if (Date.now() - chatSendT < 3000){ toast('조금만 천천히 보내주세요'); return; }
+  if (Date.now() - chatSendT < 1000){ toast('조금만 천천히 보내주세요'); return; }
   chatSendT = Date.now(); inp.value = '';
   try { await getToken();
     const r = await fbFetch(FB_DOC + '/h2d_chat?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ fields: { uid:{stringValue:pid}, nick:{stringValue:nick}, text:{stringValue:text.slice(0,60)}, ts:{integerValue:String(Date.now())}, best:{integerValue:String(bestStage)} } }) });
@@ -1874,7 +1874,9 @@ document.getElementById('bChat').onclick = () => { chatOpen = true; document.get
 document.getElementById('chatX').onclick = () => { chatOpen = false; document.getElementById('chat').classList.remove('on'); };
 document.getElementById('chatGo').onclick = sendChat;
 document.getElementById('chatIn').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); sendChat(); } });
-setInterval(() => { if (!IS_TEST && (chatOpen || !document.hidden)) loadChat(); }, 5000);
+// 창이 열려 있으면 2초마다, 닫혀 있으면 10초마다 (빨간 점 알림용)
+let chatTick = 0;
+setInterval(() => { if (IS_TEST || document.hidden) return; chatTick++; if (chatOpen || chatTick % 5 === 0) loadChat(); }, 2000);
 
 // ---- 시작 ----
 if (!IS_TEST){
