@@ -122,7 +122,7 @@ const cv = document.getElementById('cv'), stage = document.getElementById('stage
 function fit(){ const r = stage.getBoundingClientRect(), d = Math.min(2, devicePixelRatio||1); cv.width = Math.round(r.width*d); cv.height = Math.round(r.height*d); }
 addEventListener('resize', fit); fit();
 
-const SRC = { g:'g00', h0:'h00', h1:'h03', h2:'h09', h3:'h12', h4:'h17', m0:'a00_m0', m1:'a00_m1', m2:'a00_m2', m3:'a00_m3', boss:'boss00',
+const SRC = { g:'g00', h0:'h04', h1:'h08', h2:'h11', h3:'h13', h4:'h15', m0:'a00_m0', m1:'a00_m1', m2:'a00_m2', m3:'a00_m3', boss:'boss00',
   shock:'shock', boom:'explosion', coin:'i_gold', star:'star', ring:'circle_gold', arc:'circle_arcane', slash:'slash', bolt:'lightning', gift:'i_gift' };
 const IMG = {}, BOX = {};
 const load = () => Promise.all(Object.entries(SRC).map(([k,f]) => new Promise(r => { const im = new Image(); im.onload = () => { IMG[k]=im; BOX[k]=bbox(im); r(); }; im.onerror = r; im.src = '../proto2d/img/'+f+'.png'; })));
@@ -140,11 +140,11 @@ let shake=0, hitStop=0, time=0;
 // 돌(1~10) → 10단계 두 개 합성 시 4종 중 랜덤 진화 → 각자 1~10단계
 const MAXLV = 10;
 const TYPES = {
-  stone: { name:'돌',      hero:'h0', who:'성기사',  names:['조약돌','자갈','돌덩이','단단한 돌','강철석','월석','수정석','마력석','용암석','태초의 돌'] },
-  orb:   { name:'마법 구슬', hero:'h2', who:'화염술사', names:['불씨 구슬','화염 구슬','서리 구슬','번개 구슬','폭풍 구슬','심연 구슬','태양 구슬','성운 구슬','혼돈 구슬','창세의 구슬'] },
-  sword: { name:'무기',     hero:'h1', who:'검사',    names:['녹슨 검','철검','기사의 검','은빛 대검','청염검','용골검','성검','마검','천둥 대검','전설의 검'] },
-  arrow: { name:'화살',     hero:'h3', who:'궁수',    names:['나무 화살','철 화살','깃털 화살','불화살','얼음 화살','번개 화살','바람 화살','독 화살','별빛 화살','신궁의 화살'] },
-  egg:   { name:'정령 알',  hero:'h4', who:'정령사',  names:['작은 알','따뜻한 알','빛나는 알','바람 정령','물 정령','불 정령','번개 정령','숲 정령','달 정령','태초 정령'] },
+  stone: { name:'돌',      hero:'h0', who:'은빛 기사',  names:['조약돌','자갈','돌덩이','단단한 돌','강철석','월석','수정석','마력석','용암석','태초의 돌'] },
+  orb:   { name:'마법 구슬', hero:'h2', who:'별의 마법사', names:['불씨 구슬','화염 구슬','서리 구슬','번개 구슬','폭풍 구슬','심연 구슬','태양 구슬','성운 구슬','혼돈 구슬','창세의 구슬'] },
+  sword: { name:'무기',     hero:'h1', who:'그림자 암살자',    names:['녹슨 검','철검','기사의 검','은빛 대검','청염검','용골검','성검','마검','천둥 대검','전설의 검'] },
+  arrow: { name:'화살',     hero:'h3', who:'바람 궁수',    names:['나무 화살','철 화살','깃털 화살','불화살','얼음 화살','번개 화살','바람 화살','독 화살','별빛 화살','신궁의 화살'] },
+  egg:   { name:'정령 알',  hero:'h4', who:'연꽃 성녀',  names:['작은 알','따뜻한 알','빛나는 알','바람 정령','물 정령','불 정령','번개 정령','숲 정령','달 정령','태초 정령'] },
 };
 const BRANCH = ['orb','sword','arrow','egg'];
 const HUE = [28, 200, 52, 280, 130, 0, 185, 310, 45, 330];
@@ -622,7 +622,7 @@ function frame(now){
 }
 
 // ---------- 영웅 · 제작 탭 ----------
-const HIMG = { stone:'h00', orb:'h09', sword:'h03', arrow:'h12', egg:'h17' };
+const HIMG = { stone:'h04', orb:'h11', sword:'h08', arrow:'h13', egg:'h15' };
 const ICON = {};
 function itemIcon(t, lv){ const key = t+lv; if (ICON[key]) return ICON[key]; const c = document.createElement('canvas'); c.width = c.height = 96; const save = cx; cx = c.getContext('2d');
   try { drawItem(t, lv, 48, 50, 30, 0); } finally { cx = save; } return ICON[key] = c.toDataURL(); }
