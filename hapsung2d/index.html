@@ -1268,7 +1268,7 @@ let pid = '', nick = '', bestStage = 1, rankDirty = true;
 const lsGet = k => { try { return localStorage.getItem(k); } catch(e){ return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e){} };
 function snapshot(){ return { v:1, gold, coin, stageNo, bestStage, sumCost, atkLv, atkCost, grid: grid.map(x => x ? [x.t, x.lv] : 0), own, equipped, inv, tickets, ticketT,
-  pendingRare, pid, nick, usedCodes, up, raid: raidSave, lastSeen: Date.now() }; }
+  pendingRare, pid, nick, usedCodes, up, raid: raidSave, stats, lastSeen: Date.now() }; }
 function saveGame(){ if (IS_TEST || !pid) return; lsSet(SAVE_KEY, JSON.stringify(snapshot())); }
 function loadGame(){
   let d = null; try { d = JSON.parse(lsGet(SAVE_KEY) || 'null'); } catch(e){}
@@ -1279,7 +1279,7 @@ function loadGame(){
   equipped = (d.equipped || ['stone']).filter(t => own[t] && own[t].have);
   Object.assign(inv, d.inv || {}); tickets = d.tickets ?? 2; ticketT = d.ticketT ?? TICKET_TIME;
   pendingRare.length = 0; (d.pendingRare || []).forEach(v => pendingRare.push(v));
-  pid = d.pid || ''; nick = d.nick || ''; usedCodes = d.usedCodes || []; if (d.up) Object.assign(up, d.up); if (d.raid) Object.assign(raidSave, d.raid); atkLv = Math.min(atkLv, 21);
+  pid = d.pid || ''; nick = d.nick || ''; usedCodes = d.usedCodes || []; if (d.up) Object.assign(up, d.up); if (d.raid) Object.assign(raidSave, d.raid); if (d.stats) Object.assign(stats, d.stats); atkLv = Math.min(atkLv, 21);
   return d;
 }
 // 자리를 비운 동안: 지금 스테이지 기준 초당 0.25마리 사냥으로 계산, 최대 8시간
@@ -1317,6 +1317,17 @@ async function getToken(){
 }
 async function fbFetch(url, opt){ const t = await getToken(); opt = opt || {}; opt.headers = Object.assign({'Content-Type':'application/json', 'Authorization':'Bearer ' + t}, opt.headers || {});
   const r = await fetch(url, opt); if (!r.ok){ let m = ''; try { m = (await r.clone().json()).error?.message || ''; } catch(e){} lastNetErr = r.status + ' ' + m; } return r; }
+// ---- 접속 기록 (관리자 화면용): 닉네임과 게임 기록만 ----
+const stats = { first: 0, visits: 0, playSec: 0 };
+async function pushStats(){
+  if (IS_TEST) return;
+  try { await getToken(); } catch(e){ return; }
+  const I = v => ({ integerValue: String(Math.max(0, Math.round(v || 0))) });
+  const body = { fields: { nick:{stringValue: nick || ''}, stage: I(stageNo), best: I(bestStage), power:{doubleValue: power()}, playSec: I(stats.playSec),
+    first: I(stats.first), last: I(Date.now()), visits: I(stats.visits), raidWk: I(raidSave.wk), raidDmg:{doubleValue: raidSave.dmg || 0},
+    heroes: I(Object.values(own).filter(o => o.have).length), ver:{stringValue:'1123-4'} } };
+  try { await fbFetch(FB_DOC + '/h2d_stats/' + pid + '?key=' + FB_KEY, { method:'PATCH', body: JSON.stringify(body) }); } catch(e){}
+}
 // ---- 랭킹 (Firebase) ----
 function power(){ let p = 0; for (const t in TYPES){ const hi = heroItem(t), lv = bestOf(hi); if (lv) p += dmgOf(hi, lv) * bonus(t); } return Math.round(p * atkMul(up.atk) * (1 + (0.18 + critAdd()) * (critMul() - 1))); }
 const areaName = st => areaLabel(st);
@@ -1531,6 +1542,10 @@ if (!IS_TEST){
   if (d) offlineReward(d); else { pid = ''; }
   if (!nick) document.getElementById('nick').classList.add('on');
   raidFix(); setTimeout(raidClaim, 2500);
+  if (!stats.first) stats.first = Date.now(); stats.visits++;
+  setInterval(() => { if (!document.hidden) stats.playSec++; }, 1000);
+  setTimeout(pushStats, 4000); setInterval(() => { if (!document.hidden) pushStats(); }, 120000);
+  addEventListener('visibilitychange', () => { if (document.hidden) pushStats(); });
   layout(); updTop(); updBtns(); updCoin(); sig = '';
   setInterval(() => { if (stageNo > bestStage){ bestStage = stageNo; rankDirty = true; pushRank(); } saveGame(); }, 5000);
   setInterval(() => { if (rankDirty) pushRank(); rankDirty = true; }, 60000);
