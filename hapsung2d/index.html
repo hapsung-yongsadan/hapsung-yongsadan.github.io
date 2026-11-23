@@ -1558,7 +1558,7 @@ async function loadRank(){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
 updQBtn();
-document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-13)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
+document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-14)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
@@ -2378,10 +2378,6 @@ function arUpdate(dt){
 }
 function endArena(win){
   AT.over = true; AT.shots.length = 0; const opp = AT.opp, my = arena.score, os = opp.score || 1000;
-  if (opp.bot){ document.getElementById('arT').textContent = win ? '🏆 연습 승리!' : '연습 패배…'; document.getElementById('arT').style.color = win ? '#ffe27a' : '#ff9a8a';
-    document.getElementById('arP').textContent = (nick || '나') + ' VS ' + opp.nick; document.getElementById('arS').innerHTML = '연습전은 점수 변동이 없어요';
-    document.getElementById('arList').innerHTML = '<div style="opacity:.7">서버가 돌아오면 친구 팀과 대결할 수 있어요</div>';
-    setTimeout(() => document.getElementById('arR').classList.add('on'), 700); return; }
   let d, bonus = 0;
   const weak = my - os > 300;   // 점수가 훨씬 낮은 상대만 골라 잡는 걸 막기
   if (win){ arena.streak++; arena.maxStreak = Math.max(arena.maxStreak || 0, arena.streak); bonus = weak ? 0 : Math.min(50, 5 * (arena.streak - 1)); d = weak ? 1 : clamp(Math.round(20 + (os - my)/20), 8, 40) + bonus; arena.win++; }
@@ -2440,16 +2436,14 @@ document.getElementById('arSkip').onclick = () => { if (!AT.on || AT.over) retur
 document.getElementById('arOk').onclick = () => { document.getElementById('arR').classList.remove('on'); AT.on = false; useScene('idle'); setView('idle'); openArena(); };
 document.getElementById('arAgain').onclick = () => { document.getElementById('arR').classList.remove('on'); AT.on = false; const o = AT.opp; useScene('idle'); setView('idle'); startArena(o); };
 let arRows = [], arTab = 'opp', oppAt = 0, oppNote = '';
-// 상대 목록은 3분 동안 다시 받지 않음 (서버 읽기 절약) · 서버가 안 되면 저장해 둔 목록, 그것도 없으면 연습 상대
-function arBots(){ const p = Math.max(1, power()), pick = () => Object.keys(TYPES).sort(() => Math.random() - 0.5).slice(0,3).map(t => t + ':' + Math.max(1, Math.min(10, (own[t].star||3))) + ':' + (bestOf(heroItem(t)) || 6) + ':' + t).join(',');
-  return [['🤖 연습 허수아비', 0.6], ['🤖 연습 기사단', 1.0], ['🤖 연습 챔피언', 1.5]].map(([n, k], i) => ({ id:'bot' + i, nick:n, score: arena.score, pow: p*k, team: pick(), bot:true })); }
+// 상대 목록은 3분 동안 다시 받지 않음 (서버 읽기 절약) · 서버가 안 되면 저장해 둔 목록, 그것도 없으면 안내 문구
 async function arOpps(force){
-  if (!force && arRows.length && !arRows[0].bot && Date.now() - oppAt < 180000) return;
+  if (!force && arRows.length && Date.now() - oppAt < 180000) return;
   if (rankDirty) await pushRank();
   try { arRows = await arQuery('aPow'); oppAt = Date.now(); oppNote = ''; lsSet('h2d_arOpp', JSON.stringify(arRows)); }
   catch(e){ let c = null; try { c = JSON.parse(lsGet('h2d_arOpp') || 'null'); } catch(_){}
     if (c && c.length){ arRows = c; oppNote = '지금 서버가 쉬는 중이라 마지막으로 받아둔 친구 팀과 싸워요 (점수는 서버가 돌아오면 올라가요)'; }
-    else { arRows = arBots(); oppNote = '지금 서버가 쉬는 중이라 연습 상대만 있어요 · 연습전은 점수·보상 없음'; } }
+    else { arRows = []; oppNote = ''; throw e; } }
 }
 async function arQuery(field){
   const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_players'}], orderBy:[{field:{fieldPath:field}, direction:'DESCENDING'}], limit:40 } }) });
