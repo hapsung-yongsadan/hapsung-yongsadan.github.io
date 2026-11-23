@@ -87,7 +87,9 @@
   #rbGo:disabled{filter:grayscale(1) brightness(.6)}
   .rbinfo{font-size:2.7cqw;color:#bba887;margin-bottom:2cqw;line-height:1.5}
   #rrDmg{font-family:Jua;font-size:11cqw;color:#fff;text-shadow:0 4px 0 #5a1500}
-  body.raid .quit.rq{display:block!important}
+  body.raid .quit.rq, body.raid .quit.hunt.rui{display:block!important}
+  .idle.live{animation:livePulse 1.2s ease-in-out infinite alternate}
+  @keyframes livePulse{from{filter:brightness(1)}to{filter:brightness(1.35) drop-shadow(0 0 6px #fff6)}}
   .dui{display:none!important}
   body.def .dui.btns{display:flex!important}
   body.def .dui.quit{display:block!important}
@@ -259,6 +261,7 @@
   <button id="bRank" class="idle">🏆 랭킹</button>
   <button id="bRaid" class="idle">👹 주간 레이드<small>모두 함께 보스 공략</small></button>
   <button class="rui quit rq" id="rQuit">그만하기</button>
+  <button class="rui quit hunt" id="rHunt">◀ 사냥터 보기<small>탑은 계속 싸워요</small></button>
   <div class="modal" id="raidL"><div class="box"><div class="mh">👹 주간 보스 레이드<button id="rbX">✕</button></div>
     <img id="rbImg" alt=""><div class="mh" id="rbName" style="font-size:7cqw"></div>
     <div class="rbline" id="rbLeft"></div><div class="rbline" id="rbMine" style="color:#cfe8ff"></div>
@@ -275,6 +278,7 @@
   <button id="bTower" class="idle">🗼 무한의 탑<small>보스 연속 도전</small></button>
   <button id="bSurv" class="idle">🧛 서바이벌<small>5분 버티기</small></button>
   <button class="sui quit" id="sQuit">그만하기</button>
+  <button class="sui quit hunt" id="sHunt">◀ 사냥터 보기<small>그동안 일시정지</small></button>
   <div class="modal" id="survL"><div class="box"><div class="mh">🧛 서바이벌<button id="svX">✕</button></div>
     <p style="margin:2cqw 0">몰려오는 몬스터 떼 속에서 <b style="color:#ffd978">5분</b>을 버티세요!<br>레벨업할 때마다 무기와 능력을 골라 강해져요</p>
     <div class="rbline" id="svInfo" style="color:#cfe8ff"></div>
@@ -979,6 +983,8 @@ function frame(now){
   if (mode !== 'idle'){ shake = sv[0]; hitStop = sv[1]; tickFx(dt); }
   // 방어전이 열려 있으면 화면과 상관없이 계속 진행
   if (defOn){ useScene('def'); const s2 = [shake, hitStop]; dUpdate(dt); if (mode !== 'def'){ shake = s2[0]; hitStop = s2[1]; tickFx(dt); } }
+  // 탑·레이드도 화면과 상관없이 계속 진행
+  if (R.on && !R.over && mode !== 'raid'){ useScene('raid'); const s3 = [shake, hitStop]; raidUpdate(dt); shake = s3[0]; hitStop = s3[1]; }
   if (mode === 'def'){ useScene('def'); dRender(dt); requestAnimationFrame(frame); return; }
   if (mode === 'raid'){ useScene('raid'); raidUpdate(dt); raidRender(dt); requestAnimationFrame(frame); return; }
   if (mode === 'surv'){ useScene('surv'); survUpdate(dt); survRender(dt); requestAnimationFrame(frame); return; }
@@ -1518,7 +1524,7 @@ async function loadRank(){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
 updQBtn();
-document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-7)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
+document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-8)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
@@ -1607,7 +1613,18 @@ async function openRaid(){
                             : '<div class="rk-msg">아직 아무도 도전하지 않았어요. 첫 번째로 때려보세요!</div>';
   } catch(e){ tierEl.textContent = ''; list.innerHTML = '<div class="rk-msg">레이드 서버에 연결하지 못했어요.<br>도전은 할 수 있고, 기록은 연결되면 올라가요.<br><small style="opacity:.6">' + esc(lastNetErr) + '</small></div>'; }
 }
-document.getElementById('bRaid').onclick = openRaid;
+function raidView(){ setView('raid'); if (R.over) document.getElementById('raidR').classList.add('on'); }
+document.getElementById('bRaid').onclick = () => { if (R.on && R.kind === 'raid'){ raidView(); return; } if (R.on){ toast('무한의 탑 도전이 끝난 뒤에 할 수 있어요'); return; } openRaid(); };
+document.getElementById('rHunt').onclick = () => setView('idle');
+document.getElementById('sHunt').onclick = () => { S.joy = null; keys.clear(); document.getElementById('survUp').classList.remove('on'); setView('idle'); };
+function updLive(){
+  const tw = R.on && R.kind === 'tower', rd = R.on && R.kind === 'raid', sv = S.on && !S.over;
+  const set = (id, live, a, b) => { const el = document.getElementById(id); el.classList.toggle('live', live); const h = a + '<small>' + b + '</small>'; if (el.dataset.h !== h){ el.dataset.h = h; el.innerHTML = h; } };
+  set('bTower', tw, '🗼 무한의 탑', tw ? (R.over ? (twTimer && tower.auto ? (R.floor+1) + '층 준비 중' : R.floor + '층 결과 확인') : R.floor + '층 전투 중 · 보러 가기') : '보스 연속 도전');
+  set('bRaid', rd, '👹 주간 레이드', rd ? (R.over ? '결과 확인' : '전투 중 · 보러 가기') : '모두 함께 보스 공략');
+  set('bSurv', sv, '🧛 서바이벌', sv ? '일시정지 · 이어하기' : '5분 버티기');
+}
+setInterval(updLive, 500);
 document.getElementById('rbX').onclick = () => document.getElementById('raidL').classList.remove('on');
 document.getElementById('rbGo').onclick = () => { raidFix(); if (raidSave.left <= 0) return; raidSave.left--; document.getElementById('raidL').classList.remove('on'); startRaid(); };
 
@@ -1615,12 +1632,12 @@ document.getElementById('rbGo').onclick = () => { raidFix(); if (raidSave.left <
 function raidActors(){ const list = [];
   for (const t in TYPES){ const it = heroItem(t), lv = bestOf(it) || (t === 'stone' ? 1 : 0); if (!lv) continue; list.push({ t, it, lv, hero: equipped.includes(t), timer: rnd(0,0.5), kick:0 }); }
   const n = list.length; list.forEach((a,i) => { a.x = W/2 + (i - (n-1)/2) * 132; a.y = a.hero ? 1040 : 990; }); return list; }
-function startRaid(kind){
+function startRaid(kind, bg){
   kind = kind === 'tower' ? 'tower' : 'raid'; const fl = tower.best + 1;
   if (kind === 'tower') needArea(towerBoss(fl));
   Object.assign(R, { kind, floor: fl, hp: towerHp(fl), on:true, t:RAID_TIME, total:0, shots:[], bossFlash:0, sq:0, shield:0, shieldT:7, combo:0, comboT:0, tapCd:0, over:false, actors: raidActors(), weak:false });
-  FXS.raid.fx.length = FXS.raid.nums.length = 0; useScene('raid'); setView('raid');
-  if (kind === 'tower') banner('무한의 탑 ' + fl + '층', '30초 안에 ' + BOSS_NAMES[towerBoss(fl)] + '을(를) 쓰러뜨리세요!');
+  FXS.raid.fx.length = FXS.raid.nums.length = 0; useScene('raid'); if (!bg) setView('raid');
+  if (bg) toast('🗼 ' + fl + '층 도전 시작!'); else if (kind === 'tower') banner('무한의 탑 ' + fl + '층', '30초 안에 ' + BOSS_NAMES[towerBoss(fl)] + '을(를) 쓰러뜨리세요!');
   else banner(raidBossName() + ' 레이드!', '30초 동안 최대한 많이 때리세요 · 보스를 직접 눌러도 피해!');
 }
 const raidBoss = { x: W/2, y: 760, h: 520 };
@@ -1669,7 +1686,7 @@ function endRaid(){
   document.getElementById('rrDmg').textContent = fmt(Math.round(dmg));
   document.getElementById('rrSub').textContent = '이번 주 누적 ' + fmt(Math.round(raidSave.dmg)) + ' · 남은 도전 ' + raidSave.left + '번';
   document.getElementById('rrList').innerHTML = '<div>💰 골드 +' + fmt(g) + '</div><div>◆ ' + TYPES[pt].who + ' 조각 +' + pc + '</div><div>💎 희망코인 +1</div><div>🔷 각성석 +2</div>';
-  document.getElementById('raidR').classList.add('on');
+  if (mode === 'raid') document.getElementById('raidR').classList.add('on'); else toast('👹 레이드 종료! 레이드 버튼에서 결과 확인');
 }
 document.getElementById('rrOk').onclick = () => { clearInterval(twTimer); twTimer = null; document.getElementById('rrNext').style.display = 'none'; document.getElementById('rrOk').textContent = '확인'; document.getElementById('raidR').classList.remove('on'); const k = R.kind; R.on = false; FXS.raid.fx.length = FXS.raid.nums.length = 0; useScene('idle'); setView('idle'); if (k === 'tower') openTower(); else openRaid(); };
 document.getElementById('rQuit').onclick = () => { if (R.on && !R.over){ R.t = 0; endRaid(); } };
@@ -1804,14 +1821,14 @@ async function openTower(){
     list.innerHTML = rows.length ? rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + MEDAL(i) + '</b><span>' + ttl('tower', i) + esc(o.nick) + '</span><em>' + o.tw + '층</em></div>').join('') : '<div class="rk-msg">아직 기록이 없어요. 첫 정복자가 되어보세요!</div>';
   } catch(e){ list.innerHTML = '<div class="rk-msg">탑 순위를 불러오지 못했어요</div>'; }
 }
-document.getElementById('bTower').onclick = openTower;
+document.getElementById('bTower').onclick = () => { if (R.on && R.kind === 'tower'){ raidView(); return; } if (R.on){ toast('주간 레이드가 끝난 뒤에 할 수 있어요'); return; } openTower(); };
 document.getElementById('twX').onclick = () => document.getElementById('towerL').classList.remove('on');
 document.getElementById('twAuto').onchange = e => { tower.auto = e.target.checked; saveGame(); };
 let twTimer = null;
 function towerNext(){
   clearInterval(twTimer); twTimer = null; document.getElementById('rrNext').style.display = 'none';
   towerFix(); if (tower.left <= 0) return; tower.left--;
-  document.getElementById('raidR').classList.remove('on'); R.on = false; startRaid('tower');
+  document.getElementById('raidR').classList.remove('on'); R.on = false; startRaid('tower', mode !== 'raid');
 }
 document.getElementById('rrNext').onclick = towerNext;
 document.getElementById('twGo').onclick = () => { towerFix(); if (tower.left <= 0) return; tower.left--; document.getElementById('towerL').classList.remove('on'); startRaid('tower'); };
@@ -1830,13 +1847,17 @@ function endTower(win){
   document.getElementById('rrSub').textContent = '최고 ' + tower.best + '층 · 오늘 남은 도전 ' + tower.left + '번';
   document.getElementById('rrList').innerHTML = list || '<div style="opacity:.7">더 강해져서 다시 도전하세요!</div>';
   const nx = document.getElementById('rrNext'); clearInterval(twTimer); twTimer = null;
+  if (mode !== 'raid'){
+    if (win && tower.auto && tower.left > 0){ toast('🗼 ' + f + '층 돌파! 다음 층으로'); twTimer = setTimeout(towerNext, 1500); return; }
+    toast(win ? '🗼 ' + f + '층 돌파! 탑 버튼에서 결과 확인' : '🗼 ' + f + '층 실패… 탑 버튼에서 결과 확인');
+  }
   if (win && tower.left > 0){
     nx.style.display = '';
     if (tower.auto){ let c = 3; nx.textContent = '▶ ' + (f+1) + '층 자동 도전 ' + c + '초'; document.getElementById('rrOk').textContent = '자동 멈추기';
       twTimer = setInterval(() => { c--; if (c <= 0) towerNext(); else nx.textContent = '▶ ' + (f+1) + '층 자동 도전 ' + c + '초'; }, 1000); }
     else nx.textContent = '▶ ' + (f+1) + '층 바로 도전';
   } else nx.style.display = 'none';
-  document.getElementById('raidR').classList.add('on');
+  if (mode === 'raid') document.getElementById('raidR').classList.add('on');
 }
 
 
@@ -2215,7 +2236,7 @@ async function openSurv(){
     list.innerHTML = rows.length ? rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + MEDAL(i) + '</b><span>' + ttl('surv', i) + esc(o.nick) + '</span><em>' + Math.floor(o.s/60) + '분 ' + (o.s%60) + '초<small>처치 ' + o.k + '</small></em></div>').join('') : '<div class="rk-msg">아직 기록이 없어요. 첫 생존자가 되어보세요!</div>';
   } catch(e){ list.innerHTML = '<div class="rk-msg">순위를 불러오지 못했어요</div>'; }
 }
-document.getElementById('bSurv').onclick = openSurv;
+document.getElementById('bSurv').onclick = () => { if (S.on && !S.over){ setView('surv'); if (S.paused) document.getElementById('survUp').classList.add('on'); return; } openSurv(); };
 document.getElementById('svX').onclick = () => document.getElementById('survL').classList.remove('on');
 document.getElementById('svGo').onclick = startSurv;
 
