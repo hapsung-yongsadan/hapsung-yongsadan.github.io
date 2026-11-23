@@ -165,6 +165,23 @@
   .rel small{font-size:2.6cqw;color:#cfe8ff}
   #bChat{position:absolute;left:3%;top:22.4%;z-index:7;font-family:Jua;font-size:3.2cqw;color:#fff;background:linear-gradient(180deg,#1f6a5a,#0c3a30);border:1.5px solid #8affd8;border-radius:10px;padding:1cqw 2.6cqw}
   #bMe{position:absolute;left:3%;top:26.8%;z-index:7;font-family:Jua;font-size:3.2cqw;color:#fff;background:linear-gradient(180deg,#2a4a8a,#0c1a4a);border:1.5px solid #8ab8ff;border-radius:10px;padding:1cqw 2.6cqw}
+  #bMeter{position:absolute;left:3%;top:31.2%;z-index:7;font-family:Jua;font-size:3.2cqw;color:#fff;background:linear-gradient(180deg,#6a4a1a,#3a2004);border:1.5px solid #ffd07a;border-radius:10px;padding:1cqw 2.6cqw}
+  #bMeter.on{background:linear-gradient(180deg,#e8a830,#8a5a04)}
+  body.raid #bMeter, body.surv #bMeter, body.arena #bMeter, body.raid #meter, body.surv #meter, body.arena #meter{display:none!important}
+  body.def #bMeter{top:auto;bottom:24.5%}
+  #meter{position:absolute;left:3%;top:35.4%;width:54%;z-index:7;display:none;padding:1.6cqw 2cqw;border-radius:12px;background:rgba(10,6,2,.78);border:1.5px solid rgba(255,215,120,.45);pointer-events:auto}
+  body.def #meter{top:auto;bottom:29%}
+  #meter.on{display:block}
+  .mth{display:flex;justify-content:space-between;align-items:center;font-family:Jua;font-size:3.1cqw;color:#ffe9b0;margin-bottom:1cqw}
+  .mth b{font-weight:400}
+  .mth button{font-family:Jua;font-size:2.6cqw;color:#e9dcc0;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:.4cqw 1.6cqw}
+  .mtr{display:flex;align-items:center;gap:1.4cqw;margin:.5cqw 0;font-family:Jua;font-size:2.7cqw;color:#f2dca8}
+  .mtr img{width:5.4cqw;height:5.4cqw;object-fit:contain;border-radius:50%;background:rgba(255,255,255,.08)}
+  .mtr .mb{flex:1;min-width:0}
+  .mtr .mb i{display:block;height:1.2cqw;border-radius:99px;margin-top:.3cqw;background:linear-gradient(90deg,#ffb030,#ffe27a)}
+  .mtr .mb span{display:flex;justify-content:space-between;white-space:nowrap}
+  .mtr .mb small{color:#a8987a;font-size:2.4cqw}
+  .mtsum{font-family:Jua;font-size:2.6cqw;color:#cdb98f;text-align:right;margin-top:.6cqw;border-top:1px solid rgba(255,215,120,.2);padding-top:.6cqw}
   #meB{overflow-y:auto;max-height:68cqh;touch-action:pan-y;text-align:left}
   .mecard{display:flex;align-items:center;gap:3cqw;padding:2.5cqw;border-radius:14px;background:linear-gradient(180deg,rgba(90,60,20,.55),rgba(30,20,8,.55));border:1.5px solid rgba(255,215,120,.45)}
   .mecard img{width:18cqw;height:18cqw;object-fit:contain}
@@ -304,6 +321,8 @@
   <button id="bGrow" class="idle">🔮 환생 · 유물</button>
   <button id="bChat" class="idle">💬 채팅<i id="chatDot"></i></button>
   <button id="bMe" class="idle">👤 내 정보</button>
+  <button id="bMeter">📊 딜량</button>
+  <div id="meter"><div class="mth"><b id="mtT">📊 영웅별 딜량</b><button id="mtR">초기화</button></div><div id="mtL"></div></div>
   <div class="modal" id="meM"><div class="box"><div class="mh">👤 내 정보<button id="meX">✕</button></div><div id="meB"></div></div></div>
   <div id="skills"></div>
   <div class="modal" id="chat"><div class="box chatbox"><div class="mh">💬 채팅<button id="chatX">✕</button></div><div id="chatL"></div>
@@ -436,7 +455,7 @@ function updMeteors(arr, dt, list, hitFn){
     if (!f.done && f.t >= f.delay + f.fall){ f.done = true;
       addFx({type:'img', k:'boom', x:f.x, y:f.y-20, s0:0.2, s1:0.6, life:.35, add:true}); addFx({type:'img', k:'star', x:f.x, y:f.y-30, s0:0.2, s1:0.7, life:.4, add:true});
       burst(f.x, f.y-20, 8, '#cfe0ff'); shake = Math.max(shake, 5);
-      for (const o of list) if (!o.dead && Math.hypot(o.x-f.x, (o.y-f.y)*1.6) < f.r) hitFn(o, f.v, false, '#cfe0ff'); }
+      dmgSrc = 'orb'; for (const o of list) if (!o.dead && Math.hypot(o.x-f.x, (o.y-f.y)*1.6) < f.r) hitFn(o, f.v, false, '#cfe0ff'); }
     if (f.t >= f.delay + f.fall + 0.05) arr.splice(i,1); } }
 function drawMeteors(arr){
   for (const f of arr){ if (f.t < f.delay || f.done) continue; const u = (f.t - f.delay)/f.fall;
@@ -645,9 +664,15 @@ const mobAtkMul = m => m.rage ? 2 : 1;
 function mobHeal(m, dt, list){ if (m.slot !== 3) return; m.healT = (m.healT ?? 3) - dt; if (m.healT > 0) return; m.healT = 3;
   let any = false; for (const o of list) if (!o.dead && o !== m && o.hp < o.max && Math.hypot(o.x-m.x, o.y-m.y) < 220){ const h = Math.round(o.max*0.08); o.hp = Math.min(o.max, o.hp + h); num(o.x, o.y - o.h*0.9, h, false, '#7fff8a'); any = true; }
   if (any){ addFx({type:'img', k:'heal', x:m.x, y:m.y - m.h*0.5, s0:0.3, s1:0.8, life:.6, add:true, amax:0.6}); } }
+// ---- 📊 영웅별 딜량 ----
+let dmgSrc = null;
+const MT = { idle:{ t0:Date.now(), tot:{}, sec:{} }, def:{ t0:Date.now(), tot:{}, sec:{} } };
+const K2H = { stone:'stone', shield:'stone', orb:'orb', fire:'orb', sword:'sword', wave:'sword', arrow:'arrow', egg:'egg' };
+function meterAdd(k, v){ if (!(v > 0)) return; const M = MT[k], h = K2H[dmgSrc] || dmgSrc || 'etc', s = Math.floor(Date.now()/1000);
+  M.tot[h] = (M.tot[h] || 0) + v; const b = M.sec[s] || (M.sec[s] = {}); b[h] = (b[h] || 0) + v; }
 function hit(m, v, crit, col){
   if (!m || m.dead) return; v *= dmgBuff(); if (m.boss) v *= 1 + 0.1*rl(6); v = mobTakes(m, v);
-  m.hp -= v; m.flash = 1; m.kb = crit ? 30 : 14; m.sq = 1;
+  m.hp -= v; meterAdd('idle', v); m.flash = 1; m.kb = crit ? 30 : 14; m.sq = 1;
   num(m.x, m.y - m.h*0.95, v, crit);
   if (crit){ shake = Math.max(shake, 9); hitStop = Math.max(hitStop, 0.04); burst(m.x, m.y-m.h*0.5, 8, col || '#ffe08a'); }
   if (m.hp <= 0) die(m);
@@ -692,7 +717,7 @@ function attack(hr){
     let px = hr.x + 40, py = hr.y - hr.h*0.9;
     list.forEach((o, i) => { const c = crit(); const tx = o.x, ty = o.y - o.h*0.55;
       addFx({type:'bolt', x0:px, y0:py, x1:tx, y1:ty, life:0.3, col:'#ff9ad8', delay:i*0.06, seed:rnd(-1,1)});
-      setTimeout(() => { const ps = scene; useScene('idle'); burst(tx, ty, 9, '#ffb8e4'); addFx({type:'img', k:'shock', x:tx, y:ty, s0:0.1, s1:0.4, life:.22, add:true}); hit(o, dmg(c) * Math.pow(0.8, i), c, col); if (has('egg') && !o.dead){ o.stun = 0.8 + 0.2*PST('egg'); } useScene(ps); }, i*60);
+      setTimeout(() => { const ps = scene; useScene('idle'); burst(tx, ty, 9, '#ffb8e4'); addFx({type:'img', k:'shock', x:tx, y:ty, s0:0.1, s1:0.4, life:.22, add:true}); dmgSrc = 'egg'; hit(o, dmg(c) * Math.pow(0.8, i), c, col); if (has('egg') && !o.dead){ o.stun = 0.8 + 0.2*PST('egg'); } useScene(ps); }, i*60);
       px = tx; py = ty; });
     shake = Math.max(shake, 4);
   }
@@ -706,7 +731,7 @@ function updShots(dt){
     s.x = s.ox + (s.tx - s.ox)*u; s.y = s.oy + (s.ty - s.oy)*u - Math.sin(u*Math.PI)*arc; s.rot = (s.rot||0) + dt*18;
     if (s.kind === 'orb' && Math.random() < 0.6) addFx({type:'spark', x:s.x, y:s.y, vx:rnd(-80,80), vy:rnd(-120,40), life:.3, col:s.col, size:rnd(8,14)});
     if (k < 1) continue;
-    shots.splice(i,1);
+    shots.splice(i,1); dmgSrc = s.kind;
     if (s.kind === 'orb'){ addFx({type:'img', k:'boom', x:s.tx, y:s.ty, s0:0.3, s1:0.9+s.lv*0.06, life:.4, add:true}); shake = Math.max(shake, 9);
       if (has('orb')){ const gy = (s.m && !s.m.dead) ? s.m.y : s.ty + 70; spawnMeteors(flames, s.tx, gy, s.r, s.v); }
       for (const o of mobs) if (!o.dead && Math.hypot(o.x-s.tx, (o.y-o.h*0.5-s.ty)*1.3) < s.r) hit(o, s.v*(o===s.m?1:0.6), s.c, s.col); }
@@ -1233,7 +1258,7 @@ const dBoss = r => r === 5 || r === 10;
 function enterDefense(){
   if (defOn){ setView('def'); return; }
   if (tickets <= 0){ toast('입장권이 없어요 · 2분마다 1장 충전'); return; }
-  tickets--; defOn = true; FXS.def.fx.length = FXS.def.nums.length = 0; useScene('def'); setView('def');
+  tickets--; defOn = true; MT.def = { t0:Date.now(), tot:{}, sec:{} }; FXS.def.fx.length = FXS.def.nums.length = 0; useScene('def'); setView('def');
   Object.assign(D, { mobs:[], shots:[], flames:[], round:1, phase:'break', breakT:8, toSpawn:0, spawnT:0, gold:60, sumCost:30, drag:null, over:false, cleared:0 });
   D.wallMax = D.wall = 2000; D.slots.fill(null);
   const list = equipped.length ? equipped : ['stone'];
@@ -1273,7 +1298,7 @@ function dSpawn(boss){
   m.hp = m.max = boss ? dMobHp(D.round)*25 : dMobHp(D.round); mobMods(m); m.stopY = DWALL - rnd(0,34); D.mobs.push(m); return m; }
 function dTarget(x){ let b=null, bs=-1e9; for (const m of D.mobs){ if (m.dead || m.y < 60) continue; const s = m.y*2 - Math.abs(m.x-x)*0.6; if (s > bs){ bs = s; b = m; } } return b; }
 function dHit(m, v, crit, col){
-  if (!m || m.dead) return; v *= dmgBuff(); v = mobTakes(m, v); m.hp -= v; m.flash = 1; m.kb = crit ? 24 : 10; m.sq = 1; num(m.x, m.y - m.h*0.95, v, crit);
+  if (!m || m.dead) return; v *= dmgBuff(); v = mobTakes(m, v); m.hp -= v; meterAdd('def', v); m.flash = 1; m.kb = crit ? 24 : 10; m.sq = 1; num(m.x, m.y - m.h*0.95, v, crit);
   if (crit){ shake = Math.max(shake, 8); hitStop = Math.max(hitStop, 0.035); burst(m.x, m.y-m.h*0.5, 8, col || '#ffe08a'); }
   if (m.hp <= 0){ m.dead = 0.001; addFx({type:'img', k:'boom', x:m.x, y:m.y-m.h*0.45, s0:m.boss?1.2:0.4, s1:m.boss?2.4:0.85, life:.42, add:true});
     burst(m.x, m.y-m.h*0.45, m.boss?30:10, m.boss?'#ffcf5a':'#c8ff9a'); D.gold += m.boss ? 40 : 3 + Math.floor(D.round/2); if (m.boss){ shake = 28; hitStop = 0.1; } }
@@ -1295,7 +1320,7 @@ function dAct(i, u){
   else if (u.t === 'egg'){ const list = D.mobs.filter(o=>!o.dead && o.y > 60).sort((a,b)=>b.y-a.y).slice(0, 1 + u.star);
     let px = x, py = DSY - 170;
     list.forEach((o,k) => { const c = crit(), tx = o.x, ty = o.y - o.h*0.55; addFx({type:'bolt', x0:px, y0:py, x1:tx, y1:ty, life:0.3, col:'#ff9ad8', delay:k*0.06, seed:rnd(-1,1)});
-      setTimeout(() => { if (!defOn) return; const ps = scene; useScene('def'); burst(tx, ty, 9, '#ffb8e4'); addFx({type:'img', k:'shock', x:tx, y:ty, s0:0.1, s1:0.4, life:.22, add:true}); dHit(o, val(c)*Math.pow(0.8,k), c, col); if (dHas('egg') && !o.dead) o.stun = 0.8 + 0.2*PST('egg'); useScene(ps); }, k*60);
+      setTimeout(() => { if (!defOn) return; const ps = scene; useScene('def'); burst(tx, ty, 9, '#ffb8e4'); addFx({type:'img', k:'shock', x:tx, y:ty, s0:0.1, s1:0.4, life:.22, add:true}); dmgSrc = 'egg'; dHit(o, val(c)*Math.pow(0.8,k), c, col); if (dHas('egg') && !o.dead) o.stun = 0.8 + 0.2*PST('egg'); useScene(ps); }, k*60);
       px = tx; py = ty; }); }
   return true;
 }
@@ -1306,7 +1331,7 @@ function dUpdShots(dt){
     const arc = s.kind === 'fire' ? 90 : s.kind === 'stone' ? 60 : s.kind === 'arrow' ? 30 : 0;
     s.x = s.ox + (s.tx-s.ox)*u; s.y = s.oy + (s.ty-s.oy)*u - Math.sin(u*Math.PI)*arc; s.rot = (s.rot||0) + dt*18;
     if (s.kind === 'fire' && Math.random() < 0.6) addFx({type:'spark', x:s.x, y:s.y, vx:rnd(-80,80), vy:rnd(-120,40), life:.3, col:'#ffb040', size:rnd(8,14)});
-    if (k < 1) continue; D.shots.splice(i,1);
+    if (k < 1) continue; D.shots.splice(i,1); dmgSrc = s.kind;
     if (s.kind === 'fire'){ addFx({type:'img', k:'boom', x:s.tx, y:s.ty, s0:0.3, s1:0.9+s.star*0.08, life:.4, add:true}); shake = Math.max(shake, 8);
       for (const o of D.mobs) if (!o.dead && Math.hypot(o.x-s.tx, (o.y-o.h*0.5-s.ty)*1.3) < s.r) dHit(o, s.v*(o===s.m?1:0.6), s.c, s.col);
       if (dHas('orb')) spawnMeteors(D.flames, s.tx, (s.m && !s.m.dead) ? s.m.y : s.ty+60, s.r, s.v); }
@@ -1589,7 +1614,7 @@ async function loadRank(){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
 updQBtn();
-document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-17)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
+document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-18)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
@@ -1903,6 +1928,22 @@ function renderMe(){
     + '</div></div>';
   document.getElementById('meB').innerHTML = h;
 }
+let mtOn = lsGet('h2d_meter') === '1';
+const mtKey = () => mode === 'def' ? 'def' : 'idle';
+function renderMeter(){
+  document.getElementById('bMeter').classList.toggle('on', mtOn); const box = document.getElementById('meter'); box.classList.toggle('on', mtOn); if (!mtOn) return;
+  const k = mtKey(), M = MT[k], now = Math.floor(Date.now()/1000), recent = {};
+  for (const s in M.sec){ if (+s < now - 10){ delete M.sec[s]; continue; } if (+s >= now) continue; for (const h in M.sec[s]) recent[h] = (recent[h]||0) + M.sec[s][h]; }
+  const keys = Object.keys(M.tot).sort((a,b) => M.tot[b] - M.tot[a]), sum = keys.reduce((a,h) => a + M.tot[h], 0), mx = Math.max(1, ...keys.map(h => M.tot[h])), el = (Date.now() - M.t0)/1000;
+  document.getElementById('mtT').textContent = '📊 ' + (k === 'def' ? '성벽 방어전' : '사냥터') + ' 딜량';
+  document.getElementById('mtL').innerHTML = keys.length ? keys.map(h => { const t = TYPES[h];
+      return '<div class="mtr">' + (t ? '<img src="../proto2d/img/' + heroKey(h, own[h].star) + '.png">' : '<img>') + '<div class="mb"><span><b style="font-weight:400">' + (t ? t.who : '기타') + '</b><b style="font-weight:400;color:#ffe27a">' + fmt(Math.round(M.tot[h])) + ' · ' + Math.round(M.tot[h]/Math.max(1,sum)*100) + '%</b></span><i style="width:' + (M.tot[h]/mx*100) + '%"></i></div></div>'; }).join('')
+      + '<div class="mtsum">합계 ' + fmt(Math.round(sum)) + ' · 초당 ' + fmt(Math.round(Object.values(recent).reduce((a,v) => a+v, 0)/10)) + ' · ' + Math.floor(el/60) + '분 ' + Math.floor(el%60) + '초째</div>'
+    : '<div style="font-size:2.7cqw;color:#a8987a;padding:1cqw 0">아직 공격 기록이 없어요</div>';
+}
+document.getElementById('bMeter').onclick = () => { mtOn = !mtOn; lsSet('h2d_meter', mtOn ? '1' : '0'); renderMeter(); };
+document.getElementById('mtR').onclick = () => { const M = MT[mtKey()]; M.t0 = Date.now(); M.tot = {}; M.sec = {}; renderMeter(); };
+setInterval(renderMeter, 500);
 document.getElementById('bMe').onclick = () => { renderMe(); document.getElementById('meM').classList.add('on'); };
 document.getElementById('meX').onclick = () => document.getElementById('meM').classList.remove('on');
 document.getElementById('growX').onclick = () => document.getElementById('grow').classList.remove('on');
@@ -1999,7 +2040,7 @@ function fireSkill(t, auto){
   const c = skCtx(), now = nowMs(); if ((skReady[t] || 0) > now) return false;
   if (!skHasTarget(c) && t !== 'egg'){ if (!auto) toast('공격할 적이 없어요'); return false; }
   skReady[t] = now + skCd(t)*1000;
-  const base = skBase(t), sc = c.scene || 'raid', within = fn => () => { const ps = scene; useScene(sc); try { fn(); } finally { useScene(ps); } };
+  dmgSrc = t; const base = skBase(t), sc = c.scene || 'raid', within = fn => () => { const ps = scene; useScene(sc); dmgSrc = t; try { fn(); } finally { useScene(ps); } };
   const alive = () => c.list ? c.list.filter(m => !m.dead && m.x < W + 80 && m.y > 40) : [];
   callout(W/2, 330, SKILLS[t].name + '!', '#ffe27a'); shake = Math.max(shake, 14);
   if (t === 'stone'){
