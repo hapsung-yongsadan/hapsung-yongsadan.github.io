@@ -62,6 +62,10 @@
   #bArena small{display:block;font-size:2.6cqw;color:#fff0c0}
   #arList2{overflow-y:auto;max-height:40cqh;touch-action:pan-y;margin:1cqw 0 0}
   .arGo{font-family:Jua;font-size:3.4cqw;color:#fff;border:2px solid #ffd04a;border-radius:10px;background:linear-gradient(180deg,#b8282a,#5a0a10);padding:1.2cqw 2.4cqw;margin-left:1.5cqw;white-space:nowrap}
+  #arTabs{display:flex;gap:1.5cqw;justify-content:center;margin:2cqw 0 1cqw}
+  #arTabs button{flex:1;font-family:Jua;font-size:3.4cqw;color:#e9dcc0;background:rgba(0,0,0,.35);border:1.5px solid rgba(242,200,106,.3);border-radius:10px;padding:1.4cqw 0}
+  #arTabs button.on{color:#3a2200;background:linear-gradient(180deg,#ffe58a,#e8a830);border-color:#ffe58a}
+  .tier{display:inline-block;font-style:normal;font-family:Jua;font-size:2.7cqw;line-height:1;padding:.7cqw 1.4cqw;border-radius:99px;border:1.5px solid;margin-right:1.4cqw;background:rgba(0,0,0,.45);vertical-align:middle;white-space:nowrap}
   .arGo:disabled{opacity:.4;background:#333;border-color:#666}
   .sui{display:none!important}
   body.surv .sui{display:block!important}
@@ -289,8 +293,8 @@
   <button class="aui quit" id="arSkip">⏩ 결과 바로 보기</button>
   <div class="modal" id="arL"><div class="box"><div class="mh">⚔️ 투기장<button id="arX">✕</button></div>
     <div class="rbline" id="arInfo" style="color:#cfe8ff"></div><div class="rbline" id="arMy" style="color:#ffe9b0;font-size:3.2cqw"></div>
-    <div class="rbinfo">내 장착 영웅 3명 vs 친구의 장착 영웅 3명 자동 대결 · 하루 5번 · 이기면 점수↑ 골드·각성석 · 10승마다 💎2<br>🛡 방패: 탱커 · 🗡 암살: 연속 공격 · 🔮 마법: 범위 폭발 · 🏹 궁수: 치명타 · 🌸 지원: 회복</div>
-    <div class="mysub">🏆 투기장 순위 (점수)</div><div id="arList2"></div></div></div>
+    <div class="rbinfo">내 장착 영웅 3명 vs 친구의 장착 영웅 3명 자동 대결 · 횟수 무제한 · 연승 보너스 점수 중첩<br>등급 첫 달성 보상 · 매달 1일 지난 시즌 최고 등급 보상 · 새 시즌은 점수 절반부터<br>🛡 방패: 탱커 · 🗡 암살: 연속 공격 · 🔮 마법: 범위 폭발 · 🏹 궁수: 치명타 · 🌸 지원: 회복</div>
+    <div id="arTabs"><button data-t="opp" class="on">⚔ 도전 상대</button><button data-t="rank">🏆 이달 랭킹</button><button data-t="tier">🎖 등급 보상</button></div><div id="arList2"></div></div></div>
   <div class="modal" id="arR"><div class="box"><div class="mh" id="arT"></div><p id="arP"></p><p id="arS" style="font-family:Jua;font-size:5cqw;margin:2cqw 0"></p><div id="arList" class="list"></div>
     <button id="arAgain" class="big" style="margin-bottom:2cqw">⚔ 같은 상대 다시 도전</button><button id="arOk" class="big">확인</button></div></div>
   <button class="sui quit" id="sQuit">그만하기</button>
@@ -1501,7 +1505,7 @@ const areaName = st => areaLabel(st);
 async function pushRank(){
   if (IS_TEST || !nick) return; rankDirty = false;
   try { await getToken(); } catch(e){ rankDirty = true; return; }
-  const body = { fields: { nick:{stringValue:nick}, best:{integerValue:String(bestStage)}, area:{stringValue:areaName(bestStage)}, power:{doubleValue:power()}, tower:{integerValue:String(tower.best)}, surv:{integerValue:String(survSave.best)}, survK:{integerValue:String(survSave.kills)}, arena:{integerValue:String(arena.score)}, aPow:{doubleValue:power()}, aTeam:{stringValue:arTeamStr()}, reb:{integerValue:String(rb.count)}, updated:{integerValue:String(Date.now())} } };
+  const body = { fields: { nick:{stringValue:nick}, best:{integerValue:String(bestStage)}, area:{stringValue:areaName(bestStage)}, power:{doubleValue:power()}, tower:{integerValue:String(tower.best)}, surv:{integerValue:String(survSave.best)}, survK:{integerValue:String(survSave.kills)}, arena:{integerValue:String(arena.score)}, aSeason:{integerValue:String(arena.season || arSeason())}, ['ab_' + (arena.season || arSeason())]:{integerValue:String(arena.best)}, aPow:{doubleValue:power()}, aTeam:{stringValue:arTeamStr()}, reb:{integerValue:String(rb.count)}, updated:{integerValue:String(Date.now())} } };
   try { await getToken(); const r = await fbFetch(FB_DOC + '/h2d_players/' + pid + '?key=' + FB_KEY, { method:'PATCH', body: JSON.stringify(body) }); if (!r.ok) rankDirty = true; } catch(e){ rankDirty = true; }
 }
 const TITLES = {
@@ -1541,7 +1545,7 @@ async function loadRank(){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
 updQBtn();
-document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-10)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
+document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-12)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
@@ -2259,11 +2263,37 @@ document.getElementById('svX').onclick = () => document.getElementById('survL').
 document.getElementById('svGo').onclick = startSurv;
 
 // ======================= ⚔ 투기장 (친구 영웅 팀과 자동 대결) =======================
-const AR_TRIES = 5, AR_TIME = 30;
-let arena = { score:1000, day:-1, left:AR_TRIES, win:0, lose:0 };
+const AR_TIME = 30;
+// 등급: 점수 기준 · 시즌(한 달)마다 처음 오르면 등급 보상, 달이 바뀌면 지난달 최고 등급으로 시즌 보상
+const AR_TIER = [
+  { n:'브론즈',     s:0,    c:'#c98a5a', awk:0,  coin:0,  sAwk:2,  sCoin:1 },
+  { n:'실버',       s:1100, c:'#d8e2ee', awk:2,  coin:0,  sAwk:3,  sCoin:2 },
+  { n:'골드',       s:1250, c:'#ffd04a', awk:3,  coin:1,  sAwk:5,  sCoin:3 },
+  { n:'플래티넘',    s:1450, c:'#6fe8d0', awk:5,  coin:2,  sAwk:8,  sCoin:5 },
+  { n:'다이아',     s:1700, c:'#8ac8ff', awk:8,  coin:3,  sAwk:12, sCoin:8 },
+  { n:'마스터',     s:2000, c:'#d08aff', awk:12, coin:5,  sAwk:18, sCoin:12 },
+  { n:'그랜드마스터', s:2400, c:'#ff7a7a', awk:18, coin:8,  sAwk:25, sCoin:18 },
+  { n:'챌린저',     s:2900, c:'#fff2a0', awk:25, coin:12, sAwk:35, sCoin:25 },
+];
+const AR_EM = ['🥉','🥈','🥇','💠','💎','👑','🔥','🌟'];
+const arTierOf = sc => { let i = 0; for (let k = 0; k < AR_TIER.length; k++) if (sc >= AR_TIER[k].s) i = k; return i; };
+const tierTag = sc => { const i = arTierOf(sc); return '<i class="tier" style="color:' + AR_TIER[i].c + ';border-color:' + AR_TIER[i].c + '">' + AR_EM[i] + ' ' + AR_TIER[i].n + '</i>'; };
+const arSeason = () => { const d = new Date(Date.now() + 9*3600e3); return d.getUTCFullYear() * 100 + d.getUTCMonth() + 1; };
+const arSeasonName = s => Math.floor(s/100) + '년 ' + (s%100) + '월';
+const arSeasonLeft = () => { const d = new Date(Date.now() + 9*3600e3), end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth()+1, 1) - 9*3600e3; return Math.max(0, Math.ceil((end - Date.now()) / 86400e3)); };
+let arena = { score:1000, season:0, best:1000, streak:0, maxStreak:0, win:0, lose:0, got:[] };
 const AT = { on:false };
 const AR_TITLES = ['⚔️ 투기장의 신', '🏅 검투사 왕', '🥊 백전노장'];
-function arFix(){ const d = kstDay(); if (arena.day !== d){ arena.day = d; arena.left = AR_TRIES; } }
+function arFix(){
+  const se = arSeason(); if (arena.season === se) return;
+  if (arena.season){ // 지난 시즌 보상
+    const ti = arTierOf(arena.best), T = AR_TIER[ti]; giveAwk(T.sAwk); coin += T.sCoin; updCoin();
+    setTimeout(() => banner(arSeasonName(arena.season) + ' 시즌 종료!', '최고 ' + AR_EM[ti] + ' ' + T.n + ' · 각성석 +' + T.sAwk + ' · 💎 +' + T.sCoin), 1200);
+    arena.score = Math.round(1000 + Math.max(0, arena.score - 1000) / 2);   // 새 시즌: 점수 절반으로 내려서 시작
+  }
+  arena.season = se; arena.best = arena.score; arena.streak = 0; arena.got = []; for (let i = 0; i <= arTierOf(arena.score); i++) arena.got.push(i);
+  rankDirty = true; saveGame();
+}
 const arTeamStr = () => equipped.map(t => t + ':' + own[t].star + ':' + (bestOf(heroItem(t)) || 1) + ':' + heroItem(t)).join(',');
 function arParseTeam(str, pow){
   let list = String(str || '').split(',').filter(Boolean).map(x => { const [t, st, lv, it] = x.split(':'); return { t, star:+st||1, lv:+lv||1, it: it || t }; }).filter(o => TYPES[o.t]);
@@ -2287,8 +2317,7 @@ function arBuild(team, side){
   });
 }
 function startArena(opp){
-  arFix(); if (arena.left <= 0){ toast('오늘 도전을 다 썼어요'); return; }
-  if (AT.on) return; arena.left--; saveGame();
+  arFix(); if (AT.on) return;
   const me = arBuild(arParseTeam(arTeamStr(), power()), 0), en = arBuild(arParseTeam(opp.team, opp.pow), 1);
   const avg = (power() + Math.max(1, opp.pow)) / 2;
   for (const u of me.concat(en)){ u.max = u.hp = Math.round(avg * 5 * (u.t === 'stone' ? 1.8 : 1) * (0.85 + 0.15*Math.min(10, u.star)/5)); }
@@ -2336,19 +2365,26 @@ function arUpdate(dt){
 }
 function endArena(win){
   AT.over = true; AT.shots.length = 0; const opp = AT.opp, my = arena.score, os = opp.score || 1000;
-  const d = win ? clamp(Math.round(20 + (os - my)/20), 8, 40) : -clamp(Math.round(12 + (my - os)/25), 5, 25);
-  arena.score = Math.max(0, my + d); if (win) arena.win++; else arena.lose++;
+  let d, bonus = 0;
+  const weak = my - os > 300;   // 점수가 훨씬 낮은 상대만 골라 잡는 걸 막기
+  if (win){ arena.streak++; arena.maxStreak = Math.max(arena.maxStreak || 0, arena.streak); bonus = weak ? 0 : Math.min(50, 5 * (arena.streak - 1)); d = weak ? 1 : clamp(Math.round(20 + (os - my)/20), 8, 40) + bonus; arena.win++; }
+  else { d = -clamp(Math.round(12 + (my - os)/25), 5, 25); arena.streak = 0; arena.lose++; }
+  const t0 = arTierOf(my); arena.score = Math.max(0, my + d); arena.best = Math.max(arena.best, arena.score); const t1 = arTierOf(arena.score);
   let list = '';
-  const g = Math.round((win ? 120 : 30) * rewardMul() * goldMul()); gold += g; list += '<div>💰 골드 +' + fmt(g) + '</div>';
-  if (win){ giveAwk(1); list += '<div>🔷 각성석 +1</div>'; if (arena.win % 10 === 0){ coin += 2; list += '<div>💎 희망코인 +2 (' + arena.win + '승 달성!)</div>'; } }
+  const today = kstDay(); if (arena.gDay !== today){ arena.gDay = today; arena.gN = 0; }
+  if (arena.gN < 10){ arena.gN++; const g = Math.round((win ? 60 : 15) * rewardMul() * goldMul() * (1 + 0.25*t1)); gold += g; list += '<div>💰 골드 +' + fmt(g) + ' <small style="opacity:.7">(오늘 ' + arena.gN + '/10)</small></div>'; }
+  else list += '<div style="opacity:.7">오늘 골드 보상 10번을 다 받았어요 · 점수와 등급 보상은 계속!</div>';
+  if (win && weak) list += '<div style="opacity:.75">점수 차이가 300점 넘게 나는 약한 상대라 점수 +1만 올라요</div>';
+  for (let i = 1; i <= t1; i++) if (!arena.got.includes(i)){ arena.got.push(i); const T = AR_TIER[i]; giveAwk(T.awk); coin += T.coin;
+    list += '<div style="color:' + T.c + '">' + AR_EM[i] + ' ' + T.n + ' 첫 달성! 각성석 +' + T.awk + (T.coin ? ' · 💎 +' + T.coin : '') + '</div>'; }
   updCoin(); updBtns(); sig = ''; rankDirty = true; saveGame(); pushRank();
   AT.result = { win, d };
-  document.getElementById('arT').textContent = win ? '🏆 승리!' : '패배…';
+  document.getElementById('arT').textContent = win ? (arena.streak >= 2 ? '🔥 ' + arena.streak + '연승!' : '🏆 승리!') : '패배…';
   document.getElementById('arT').style.color = win ? '#ffe27a' : '#ff9a8a';
   document.getElementById('arP').textContent = (nick || '나') + ' VS ' + opp.nick;
-  document.getElementById('arS').innerHTML = '투기장 점수 <b style="color:' + (d >= 0 ? '#7dff8a' : '#ff8a7a') + '">' + (d >= 0 ? '+' : '') + d + '</b> → ' + arena.score;
+  document.getElementById('arS').innerHTML = '점수 <b style="color:' + (d >= 0 ? '#7dff8a' : '#ff8a7a') + '">' + (d >= 0 ? '+' : '') + d + '</b>' + (bonus ? ' <small style="color:#ffb060">(연승 보너스 +' + bonus + ')</small>' : '') + ' → ' + arena.score
+    + '<br>' + tierTag(arena.score) + (t1 > t0 ? ' <b style="color:#7dff8a">승급!</b>' : t1 < t0 ? ' <b style="color:#ff8a7a">강등</b>' : '');
   document.getElementById('arList').innerHTML = list;
-  document.getElementById('arAgain').style.display = arena.left > 0 ? '' : 'none';
   setTimeout(() => document.getElementById('arR').classList.add('on'), 700);
 }
 function arenaRender(dt){
@@ -2386,28 +2422,48 @@ function arenaRender(dt){
 document.getElementById('arSkip').onclick = () => { if (!AT.on || AT.over) return; let n = 0; while (!AT.over && n++ < 4000) arUpdate(0.05); FXS.arena.fx.length = FXS.arena.nums.length = 0; };
 document.getElementById('arOk').onclick = () => { document.getElementById('arR').classList.remove('on'); AT.on = false; useScene('idle'); setView('idle'); openArena(); };
 document.getElementById('arAgain').onclick = () => { document.getElementById('arR').classList.remove('on'); AT.on = false; const o = AT.opp; useScene('idle'); setView('idle'); startArena(o); };
-let arRows = [];
+let arRows = [], arTab = 'opp';
+async function arQuery(field){
+  const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_players'}], orderBy:[{field:{fieldPath:field}, direction:'DESCENDING'}], limit:40 } }) });
+  const arr = await r.json(); if (!r.ok) throw new Error(); const se = arSeason();
+  return arr.filter(e => e.document).map(e => { const f = e.document.fields || {}, cur = +(f.aSeason?.integerValue || 0) === se;
+    return { id: e.document.name.split('/').pop(), nick: f.nick?.stringValue || '???', score: cur ? +(f.arena?.integerValue || 1000) : 1000, best: +(f['ab_' + se]?.integerValue || 0), pow: +(f.aPow?.doubleValue ?? f.power?.doubleValue ?? 0), team: f.aTeam?.stringValue || '' }; });
+}
+function arHead(){
+  const ti = arTierOf(arena.score), nx = AR_TIER[ti+1];
+  document.getElementById('arInfo').innerHTML = '<div style="font-size:5cqw;margin-bottom:1cqw">' + tierTag(arena.score) + ' <b style="color:#ffe27a">' + arena.score + '점</b></div>'
+    + (nx ? '<div class="bar" style="margin:1cqw 8%"><b style="width:' + Math.min(100, (arena.score - AR_TIER[ti].s) / (nx.s - AR_TIER[ti].s) * 100) + '%"></b></div><small>' + AR_EM[ti+1] + ' ' + nx.n + '까지 ' + (nx.s - arena.score) + '점</small><br>' : '<small>최고 등급!</small><br>')
+    + arena.win + '승 ' + arena.lose + '패 · ' + (arena.streak ? '🔥 ' + arena.streak + '연승 중' : '연승 없음') + ' · 이달 최고 ' + arena.best + '점';
+  document.getElementById('arMy').innerHTML = arSeasonName(arena.season) + ' 시즌 · ' + arSeasonLeft() + '일 남음<br>내 팀: ' + equipped.map(t => TYPES[t].who + ' ★' + own[t].star).join(' · ') + ' · 전투력 ' + fmt(power());
+  document.querySelectorAll('#arTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === arTab));
+}
 async function openArena(){
-  arFix();
-  document.getElementById('arInfo').innerHTML = '내 점수 <b style="color:#ffe27a">' + arena.score + '</b> · ' + arena.win + '승 ' + arena.lose + '패 · 오늘 남은 도전 ' + arena.left + ' / ' + AR_TRIES;
-  document.getElementById('arMy').innerHTML = '내 팀: ' + equipped.map(t => TYPES[t].who + ' ★' + own[t].star).join(' · ') + '<br>전투력 ' + fmt(power());
+  arFix(); arHead();
   document.getElementById('arL').classList.add('on');
   const list = document.getElementById('arList2'); list.innerHTML = '<div class="rk-msg">불러오는 중…</div>';
   if (rankDirty || !arRows.length) await pushRank();
   try {
-    const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_players'}], orderBy:[{field:{fieldPath:'arena'}, direction:'DESCENDING'}], limit:40 } }) });
-    const arr = await r.json(); if (!r.ok) throw new Error();
-    arRows = arr.filter(e => e.document).map(e => { const f = e.document.fields || {}; return { id: e.document.name.split('/').pop(), nick: f.nick?.stringValue || '???', score: +(f.arena?.integerValue || 1000), pow: +(f.aPow?.doubleValue ?? f.power?.doubleValue ?? 0), team: f.aTeam?.stringValue || '' }; });
-    if (!arRows.some(o => o.id === pid)) arRows.push({ id:pid, nick: nick || '나', score: arena.score, pow: power(), team: arTeamStr() });
-    arRows.sort((a,b) => b.score - a.score);
-    list.innerHTML = arRows.map((o,i) => { const me = o.id === pid;
-      const t = i < 3 ? '<i class="ttl t' + (i+1) + '">' + AR_TITLES[i] + '</i>' : '';
-      return '<div class="rk' + (me ? ' me' : '') + '"><b>' + MEDAL(i) + '</b><span>' + t + esc(o.nick) + '<small style="display:block;font-size:2.6cqw;color:#b8a88a">전투력 ' + fmt(o.pow) + '</small></span><em>' + o.score + '점</em>'
-        + (me ? '<button class="arGo" disabled>나</button>' : '<button class="arGo" data-i="' + i + '">⚔ 도전</button>') + '</div>'; }).join('')
-      || '<div class="rk-msg">아직 아무도 없어요</div>';
-    list.querySelectorAll('.arGo[data-i]').forEach(b => b.onclick = () => startArena(arRows[+b.dataset.i]));
+    if (arTab === 'opp'){
+      arRows = await arQuery('aPow');
+      if (!arRows.some(o => o.id === pid)) arRows.push({ id:pid, nick: nick || '나', score: arena.score, pow: power(), team: arTeamStr() });
+      arRows.forEach(o => { if (o.id === pid) o.score = arena.score; });
+      arRows.sort((a,b) => b.score - a.score || b.pow - a.pow);
+      list.innerHTML = '<div class="rk-msg" style="padding:1cqw 0 2cqw;font-size:3cqw">도전 횟수 제한 없음 · 이기면 점수↑ · 연승할수록 보너스 점수가 쌓여요</div>' + arRows.map((o,i) => { const me = o.id === pid;
+        return '<div class="rk' + (me ? ' me' : '') + '"><span>' + tierTag(o.score) + esc(o.nick) + '<small style="display:block;font-size:2.6cqw;color:#b8a88a">전투력 ' + fmt(o.pow) + '</small></span><em>' + o.score + '점</em>'
+          + (me ? '<button class="arGo" disabled>나</button>' : '<button class="arGo" data-i="' + i + '">⚔ 도전</button>') + '</div>'; }).join('');
+      list.querySelectorAll('.arGo[data-i]').forEach(b => b.onclick = () => startArena(arRows[+b.dataset.i]));
+    } else if (arTab === 'tier'){
+      list.innerHTML = '<div class="rk-msg" style="padding:1cqw 0 2cqw;font-size:3cqw">첫 달성 보상은 시즌마다 한 번 · 시즌 보상은 다음 달 1일 접속 시 지급</div>'
+        + AR_TIER.map((T,i) => '<div class="rk' + (i === arTierOf(arena.score) ? ' me' : '') + '"><span><i class="tier" style="color:' + T.c + ';border-color:' + T.c + '">' + AR_EM[i] + ' ' + T.n + '</i><small style="display:block;font-size:2.6cqw;color:#b8a88a">' + T.s + '점 이상</small></span><em style="font-size:3cqw">'
+          + (i ? (arena.got.includes(i) ? '✅ ' : '첫 달성 ') + '🔷' + T.awk + (T.coin ? ' 💎' + T.coin : '') + '<br>' : '') + '<small>시즌 보상 🔷' + T.sAwk + ' 💎' + T.sCoin + '</small></em></div>').reverse().join('');
+    } else {
+      const rows = (await arQuery('ab_' + arSeason())).filter(o => o.best > 0);
+      list.innerHTML = '<div class="rk-msg" style="padding:1cqw 0 2cqw;font-size:3cqw">' + arSeasonName(arSeason()) + ' 시즌 · 이번 달 최고 점수 순 · ' + arSeasonLeft() + '일 남음</div>' + (rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + MEDAL(i) + '</b><span>' + (i < 3 ? '<i class="ttl t' + (i+1) + '">' + AR_TITLES[i] + '</i>' : '') + esc(o.nick) + '<small style="display:block">' + tierTag(o.best) + '</small></span><em>' + o.best + '점</em></div>').join('')
+        || '<div class="rk-msg">이번 달 첫 기록의 주인공이 되어보세요!</div>');
+    }
   } catch(e){ list.innerHTML = '<div class="rk-msg">' + netMsg('투기장') + '</div>'; }
 }
+document.querySelectorAll('#arTabs button').forEach(b => b.onclick = () => { arTab = b.dataset.t; openArena(); });
 document.getElementById('bArena').onclick = () => { if (AT.on){ setView('arena'); if (AT.over) document.getElementById('arR').classList.add('on'); return; } openArena(); };
 document.getElementById('arX').onclick = () => document.getElementById('arL').classList.remove('on');
 
@@ -2417,7 +2473,7 @@ if (!IS_TEST){
   const d = loadGame();
   if (d) offlineReward(d); else { pid = ''; }
   if (!nick) document.getElementById('nick').classList.add('on');
-  raidFix(); setTimeout(raidClaim, 2500); buildSkillBar();
+  raidFix(); setTimeout(raidClaim, 2500); buildSkillBar(); setTimeout(arFix, 1500);
   if (!stats.first) stats.first = Date.now(); stats.visits++;
   setInterval(() => { if (!document.hidden) stats.playSec++; }, 1000);
   setTimeout(pushStats, 4000); setInterval(() => { if (!document.hidden) pushStats(); }, 600000);
