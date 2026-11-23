@@ -133,8 +133,12 @@
   #bChat{position:absolute;left:3%;top:22.4%;z-index:7;font-family:Jua;font-size:3.2cqw;color:#fff;background:linear-gradient(180deg,#1f6a5a,#0c3a30);border:1.5px solid #8affd8;border-radius:10px;padding:1cqw 2.6cqw}
   #bChat i{position:absolute;top:-1cqw;right:-1cqw;width:2.8cqw;height:2.8cqw;border-radius:50%;background:#ff4d4d;box-shadow:0 0 6px #ff4d4d;display:none}
   #bChat i.on{display:block}
-  .chatbox{height:78%}
-  #chatL{flex:1;overflow-y:auto;touch-action:pan-y;text-align:left;margin:2cqw 0;padding-right:1cqw}
+  .chatbox{height:78%;max-height:78%;min-height:0}
+  #chat{align-items:start;padding-top:6%}
+  #chat.kb{padding-top:0}
+  #chat.kb .chatbox{height:96%;max-height:96%}
+  .crow{flex:none}
+  #chatL{flex:1;min-height:0;overflow-y:auto;touch-action:pan-y;text-align:left;margin:2cqw 0;padding-right:1cqw}
   .cm{background:rgba(0,0,0,.3);border-radius:10px;padding:1.6cqw 2.4cqw;margin-bottom:1.4cqw;max-width:86%}
   .cm.me{margin-left:auto;background:rgba(122,84,32,.45);border:1px solid rgba(242,200,106,.4)}
   .cm b{display:block;font-family:Jua;font-weight:400;font-size:3.3cqw;color:#ffd978}
@@ -1873,6 +1877,16 @@ try { chatSeen = +(localStorage.getItem('h2d_chatSeen') || 0); } catch(e){}
 document.getElementById('bChat').onclick = () => { chatOpen = true; document.getElementById('chat').classList.add('on'); document.getElementById('chatDot').classList.remove('on'); document.getElementById('chatL').dataset.first = ''; loadChat(); };
 document.getElementById('chatX').onclick = () => { chatOpen = false; document.getElementById('chat').classList.remove('on'); };
 document.getElementById('chatGo').onclick = sendChat;
+// 아이폰 키보드가 올라오면 채팅창을 보이는 영역에 맞춰 줄이기
+function fitChat(){ const c = document.getElementById('chat'); if (!c.classList.contains('on') || !window.visualViewport) return;
+  const vv = visualViewport, st = stage.getBoundingClientRect(), kb = vv.height < innerHeight - 80;
+  c.classList.toggle('kb', kb);
+  if (kb){ const top = Math.max(0, vv.offsetTop - st.top), h = Math.min(st.height, vv.height); c.style.top = top + 'px'; c.style.bottom = 'auto'; c.style.height = h + 'px'; }
+  else { c.style.top = c.style.bottom = c.style.height = ''; }
+  const l = document.getElementById('chatL'); l.scrollTop = l.scrollHeight; }
+if (window.visualViewport){ visualViewport.addEventListener('resize', fitChat); visualViewport.addEventListener('scroll', fitChat); }
+document.getElementById('chatIn').addEventListener('focus', () => setTimeout(fitChat, 300));
+document.getElementById('chatIn').addEventListener('blur', () => setTimeout(() => { const c = document.getElementById('chat'); c.classList.remove('kb'); c.style.top = c.style.bottom = c.style.height = ''; }, 100));
 document.getElementById('chatIn').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); sendChat(); } });
 // 창이 열려 있으면 2초마다, 닫혀 있으면 10초마다 (빨간 점 알림용)
 let chatTick = 0;
@@ -1905,7 +1919,7 @@ if (!IS_TEST){
   document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
   const vp = document.querySelector('meta[name=viewport]');
   const resetZoom = () => { if (!vp) return; vp.setAttribute('content', 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover'); };
-  if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (visualViewport.scale > 1.01){ resetZoom(); window.scrollTo(0,0); } });
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (visualViewport.scale > 1.01){ resetZoom(); if (document.activeElement && document.activeElement.tagName !== 'INPUT') window.scrollTo(0,0); } });
   // 입력칸에서 나오면 확대 원래대로 (아이폰은 글자 입력 때 자동 확대함)
   document.addEventListener('focusout', e => { if (e.target.matches && e.target.matches('input')){ resetZoom(); setTimeout(() => window.scrollTo(0,0), 50); } });
 })();
