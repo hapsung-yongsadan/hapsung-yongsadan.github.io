@@ -1442,6 +1442,7 @@ document.getElementById('offOk').onclick = () => document.getElementById('offlin
 // ---- Firebase 로그인 (익명): 서버가 로그인한 사용자만 읽고 쓰게 되어 있음 ----
 let auth = null; try { auth = JSON.parse(localStorage.getItem('h2d_auth') || 'null'); } catch(e){}
 let lastNetErr = '';
+const netMsg = what => /429|RESOURCE_EXHAUSTED|Quota/i.test(lastNetErr) ? '오늘 ' + what + ' 서버 이용량이 꽉 찼어요 😢<br>오후 5시(한국 시간)에 초기화돼요. 게임은 그대로 저장돼요.' : what + ' 서버에 연결하지 못했어요. 잠시 후 다시 열어주세요.<br><small style="opacity:.6">' + esc(lastNetErr) + '</small>';
 async function getToken(){
   if (auth && auth.token && auth.exp > Date.now() + 60e3) return auth.token;
   let r, d;
@@ -1491,7 +1492,7 @@ const MEDAL = i => i < 3 ? ['🥇','🥈','🥉'][i] : i+1;
 let huntTop = {}, huntTopAt = 0;
 function setHuntTop(rows){ huntTop = {}; rows.slice(0,3).forEach((o,i) => huntTop[o.id] = i); huntTopAt = Date.now(); }
 async function refreshHuntTop(){
-  if (Date.now() - huntTopAt < 60000) return;
+  if (Date.now() - huntTopAt < 300000) return;
   huntTopAt = Date.now();
   try {
     const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST',
@@ -1512,12 +1513,12 @@ async function loadRank(){
     setHuntTop(rows);
     if (!rows.length){ list.innerHTML = '<div class="rk-msg">아직 기록이 없어요. 첫 번째 주인공이 되어보세요!</div>'; return; }
     list.innerHTML = rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + MEDAL(i) + '</b><span>' + ttl('hunt', i) + esc(o.nick) + (o.reb ? ' <small style="color:#c78bff">환생' + o.reb + '</small>' : '') + '</span><em>' + areaName(Math.max(1,o.best)) + '<small>전투력 ' + fmt(o.power) + '</small></em></div>').join('');
-  } catch(e){ list.innerHTML = '<div class="rk-msg">랭킹 서버에 연결하지 못했어요. 잠시 후 다시 열어주세요.<br><small style="opacity:.6">' + esc(lastNetErr || String(e.message || e)) + '</small></div>'; }
+  } catch(e){ list.innerHTML = '<div class="rk-msg">' + netMsg('랭킹') + '</div>'; }
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
 updQBtn();
-document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-6)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
+document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-7)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
@@ -1922,21 +1923,34 @@ function tryAwaken(t){
 
 // ======================= 채팅 =======================
 let chatOpen = false, chatLast = 0, chatSeen = 0, chatSendT = 0;
+// 읽기 횟수를 아끼려고: 처음 한 번만 최근 40개, 그다음부터는 새 메시지만 가져옴
+let chatRows = [], chatBusy = false;
+const chatRow = e => { const f = e.document.fields; return { id: e.document.name, uid: f.uid?.stringValue, nick: f.nick?.stringValue || '???', text: f.text?.stringValue || '', ts: +(f.ts?.integerValue || 0), best: +(f.best?.integerValue || 0) }; };
 async function loadChat(){
-  refreshHuntTop();
+  if (chatBusy) return; chatBusy = true;
+  if (chatOpen) refreshHuntTop();
   try {
-    const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_chat'}], orderBy:[{field:{fieldPath:'ts'}, direction:'DESCENDING'}], limit:50 } }) });
+    const q = chatLast
+      ? { from:[{collectionId:'h2d_chat'}], where:{ fieldFilter:{ field:{fieldPath:'ts'}, op:'GREATER_THAN', value:{integerValue:String(chatLast)} } }, orderBy:[{field:{fieldPath:'ts'}, direction:'ASCENDING'}], limit:30 }
+      : { from:[{collectionId:'h2d_chat'}], orderBy:[{field:{fieldPath:'ts'}, direction:'DESCENDING'}], limit: chatOpen ? 40 : 1 };
+    const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ structuredQuery: q }) });
     const arr = await r.json(); if (!r.ok) throw new Error(lastNetErr);
-    const rows = arr.filter(e => e.document).map(e => { const f = e.document.fields; return { uid: f.uid?.stringValue, nick: f.nick?.stringValue || '???', text: f.text?.stringValue || '', ts: +(f.ts?.integerValue || 0), best: +(f.best?.integerValue || 0) }; }).reverse();
-    chatLast = rows.length ? rows[rows.length-1].ts : 0;
+    let rows = arr.filter(e => e.document).map(chatRow); if (!chatLast) rows.reverse();
+    if (!chatLast && !chatOpen){ if (rows.length) document.getElementById('chatDot').classList.toggle('on', rows[0].ts > chatSeen); return; }
+    const have = new Set(chatRows.map(o => o.id)); rows = rows.filter(o => !have.has(o.id));
+    chatRows = chatRows.concat(rows).slice(-80);
+    if (chatRows.length) chatLast = chatRows[chatRows.length-1].ts;
     document.getElementById('chatDot').classList.toggle('on', !chatOpen && chatLast > chatSeen);
     if (!chatOpen) return;
     chatSeen = chatLast; try { localStorage.setItem('h2d_chatSeen', String(chatSeen)); } catch(e){}
-    const list = document.getElementById('chatL'), atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 30;
-    list.innerHTML = rows.length ? rows.map(o => '<div class="cm' + (o.uid === pid ? ' me' : '') + '"><b>' + (o.uid in huntTop ? ttl('hunt', huntTop[o.uid]) : '') + esc(o.nick) + '<small>' + (o.best ? areaLabel(o.best) : '') + ' · ' + new Date(o.ts).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Seoul'}) + '</small></b><span>' + esc(o.text) + '</span></div>').join('')
+    const list = document.getElementById('chatL');
+    if (!rows.length && list.dataset.first === '1' && !list.querySelector('.rk-msg')) return;
+    const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 30;
+    list.innerHTML = chatRows.length ? chatRows.map(o => '<div class="cm' + (o.uid === pid ? ' me' : '') + '"><b>' + (o.uid in huntTop ? ttl('hunt', huntTop[o.uid]) : '') + esc(o.nick) + '<small>' + (o.best ? areaLabel(o.best) : '') + ' · ' + new Date(o.ts).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Seoul'}) + '</small></b><span>' + esc(o.text) + '</span></div>').join('')
       : '<div class="rk-msg">첫 인사를 남겨보세요!</div>';
     if (atBottom || list.dataset.first !== '1'){ list.scrollTop = list.scrollHeight; list.dataset.first = '1'; }
-  } catch(e){ if (chatOpen) document.getElementById('chatL').innerHTML = '<div class="rk-msg">채팅 서버에 연결하지 못했어요<br><small style="opacity:.6">' + esc(lastNetErr) + '</small></div>'; }
+  } catch(e){ if (chatOpen) document.getElementById('chatL').innerHTML = '<div class="rk-msg">' + netMsg('채팅') + '</div>'; }
+  finally { chatBusy = false; }
 }
 async function sendChat(){
   const inp = document.getElementById('chatIn'), text = inp.value.trim();
@@ -1966,7 +1980,7 @@ document.getElementById('chatIn').addEventListener('blur', () => setTimeout(() =
 document.getElementById('chatIn').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); sendChat(); } });
 // 창이 열려 있으면 2초마다, 닫혀 있으면 10초마다 (빨간 점 알림용)
 let chatTick = 0;
-setInterval(() => { if (IS_TEST || document.hidden) return; chatTick++; if (chatOpen || chatTick % 5 === 0) loadChat(); }, 2000);
+setInterval(() => { if (IS_TEST || document.hidden) return; chatTick++; if (chatOpen || chatTick % 30 === 0) loadChat(); }, 2000);
 
 
 // ======================= 서바이벌 (뱀파이어 서바이버 방식) =======================
@@ -2214,11 +2228,11 @@ if (!IS_TEST){
   raidFix(); setTimeout(raidClaim, 2500); buildSkillBar();
   if (!stats.first) stats.first = Date.now(); stats.visits++;
   setInterval(() => { if (!document.hidden) stats.playSec++; }, 1000);
-  setTimeout(pushStats, 4000); setInterval(() => { if (!document.hidden) pushStats(); }, 120000);
+  setTimeout(pushStats, 4000); setInterval(() => { if (!document.hidden) pushStats(); }, 600000);
   addEventListener('visibilitychange', () => { if (document.hidden) pushStats(); });
   layout(); updTop(); updBtns(); updCoin(); sig = '';
   setInterval(() => { if (stageNo > bestStage){ bestStage = stageNo; rankDirty = true; pushRank(); } saveGame(); }, 5000);
-  setInterval(() => { if (rankDirty) pushRank(); rankDirty = true; }, 60000);
+  let lastPow = 0; setInterval(() => { const pw = power(); if (rankDirty || Math.abs(pw - lastPow) > lastPow*0.01){ lastPow = pw; pushRank(); } }, 180000);
   addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
   addEventListener('pagehide', saveGame);
 }
