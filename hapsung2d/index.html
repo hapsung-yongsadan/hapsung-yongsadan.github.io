@@ -54,7 +54,23 @@
   .need{display:flex;align-items:center;gap:1cqw;margin-top:.6cqw;font-family:'Noto Sans KR';font-weight:700;font-size:2.6cqw;color:#e8d8b0}
   .need img{width:6.5cqw;height:6.5cqw}
   .need .ok{color:#9dff9a}.need .ng{color:#ff8a7a}
-  body.def .idle, body.raid .idle{display:none!important}
+  body.def .idle, body.raid .idle, body.surv .idle{display:none!important}
+  .sui{display:none!important}
+  body.surv .sui{display:block!important}
+  body.surv #skills{display:none}
+  #bSurv{position:absolute;right:3%;top:35.8%;z-index:7;font-family:Jua;font-size:3.6cqw;color:#fff;border-radius:14px;padding:1.4cqw 3cqw 1cqw;border:2px solid #ff9a9a;
+    background:linear-gradient(180deg,#8a1a2a,#3a0610);box-shadow:0 4px 0 #22040a,0 0 16px rgba(255,90,90,.4);line-height:1.1;text-align:center}
+  #bSurv small{display:block;font-size:2.6cqw;color:#ffd0d0}
+  #svList2{overflow-y:auto;max-height:26cqh;touch-action:pan-y;margin:0 0 2cqw}
+  #svGo:disabled{filter:grayscale(1) brightness(.6)}
+  #svCards{display:flex;flex-direction:column;gap:2.4cqw;margin-top:3cqw}
+  .svc{display:flex;flex-direction:column;align-items:center;gap:1cqw;padding:3cqw;border-radius:14px;border:2px solid #f2c86a;background:linear-gradient(180deg,#4a3420,#2a1c10);color:#fff}
+  .svc img{width:14cqw;height:14cqw}
+  .svc .em{font-size:10cqw;line-height:1}
+  .svc b{font-family:Jua;font-weight:400;font-size:5cqw}
+  .svc b span{font-size:3.6cqw;color:#9dff9a;margin-left:1.5cqw}
+  .svc small{font-size:3.4cqw;color:#e8d8b0}
+  #survUp{z-index:17}
   .rui{display:none!important}
   body.raid .rui{display:block!important}
   #bRaid{position:absolute;right:3%;top:21.4%;z-index:7;font-family:Jua;font-size:3.6cqw;color:#fff;border-radius:14px;padding:1.4cqw 3cqw 1cqw;border:2px solid #d8a0ff;
@@ -248,6 +264,16 @@
   <div class="modal" id="chat"><div class="box chatbox"><div class="mh">💬 채팅<button id="chatX">✕</button></div><div id="chatL"></div>
     <div class="crow"><input id="chatIn" maxlength="60" placeholder="메시지 입력 (60자)" autocomplete="off"><button id="chatGo">보내기</button></div></div></div>
   <button id="bTower" class="idle">🗼 무한의 탑<small>보스 연속 도전</small></button>
+  <button id="bSurv" class="idle">🧛 서바이벌<small>5분 버티기</small></button>
+  <button class="sui quit" id="sQuit">그만하기</button>
+  <div class="modal" id="survL"><div class="box"><div class="mh">🧛 서바이벌<button id="svX">✕</button></div>
+    <p style="margin:2cqw 0">몰려오는 몬스터 떼 속에서 <b style="color:#ffd978">5분</b>을 버티세요!<br>레벨업할 때마다 무기와 능력을 골라 강해져요</p>
+    <div class="rbline" id="svInfo" style="color:#cfe8ff"></div>
+    <div class="rbinfo">하루 3번 · 버틴 시간만큼 골드 · 1분마다 각성석·💎 · 5분 완주 시 보너스 + 유물 기회</div>
+    <div class="mysub">🏆 생존 순위</div><div id="svList2"></div>
+    <button id="svGo" class="big">🧛 시작하기</button></div></div>
+  <div class="modal" id="survUp"><div class="box"><div class="mh" id="svLv">레벨 업!</div><p style="margin:1cqw 0">하나를 골라주세요</p><div id="svCards"></div></div></div>
+  <div class="modal" id="survEnd"><div class="box"><div class="mh" id="svT"></div><p id="svR"></p><div id="svList" class="list"></div><button id="svOk" class="big">확인</button></div></div>
   <div class="modal" id="grow"><div class="box"><div class="mh">🔮 환생 · 유물<button id="growX">✕</button></div><div id="growB"></div></div></div>
   <div class="modal" id="towerL"><div class="box"><div class="mh">🗼 무한의 탑<button id="twX">✕</button></div>
     <div class="mh" id="twFloor" style="font-size:9cqw;color:#fff"></div><img id="twImg" alt=""><div class="rbline" id="twName"></div><div class="rbline" id="twInfo" style="color:#cfe8ff"></div>
@@ -473,7 +499,7 @@ const mobKey = (a, i) => IMG['a'+pad2(a)+'_m'+i] ? 'a'+pad2(a)+'_m'+i : 'a00_m'+
 const bossKey = a => IMG['boss'+pad2(a)] ? 'boss'+pad2(a) : 'boss00';
 const mobs = [], shots = [], coins = [];
 // 사냥터와 방어전이 동시에 돌아가므로 이펙트·숫자 목록을 장면별로 따로 둠
-const FXS = { idle:{fx:[],nums:[]}, def:{fx:[],nums:[]}, raid:{fx:[],nums:[]} };
+const FXS = { idle:{fx:[],nums:[]}, def:{fx:[],nums:[]}, raid:{fx:[],nums:[]}, surv:{fx:[],nums:[]} };
 let fx = FXS.idle.fx, nums = FXS.idle.nums, scene = 'idle';
 function useScene(sc){ scene = sc; fx = FXS[sc].fx; nums = FXS[sc].nums; }
 function tickFx(dt){ for (let i=fx.length-1;i>=0;i--){ const f = fx[i]; f.t += dt; if (f.type === 'spark'){ f.x += f.vx*dt; f.y += f.vy*dt; } if ((f.t-(f.delay||0))/f.life >= 1) fx.splice(i,1); }
@@ -708,11 +734,11 @@ function updBtns(){ document.getElementById('cSum').textContent = '💰 ' + sumC
 
 function lp(e){ const r = cv.getBoundingClientRect(); return { x:(e.clientX - r.left) / r.width * W, y:(e.clientY - r.top) / r.height * H }; }
 function slotAt(p){ const c = Math.floor((p.x - GX)/CW), r = Math.floor((p.y - GY)/CH); if (c<0||c>=COLS||r<0||r>=ROWS) return -1; return r*COLS + c; }
-cv.addEventListener('pointerdown', e => { const p = lp(e), i = slotAt(p); if (mode === 'raid'){ raidTap(p); return; } if (mode === 'def'){ dDown(p, e); return; }
+cv.addEventListener('pointerdown', e => { const p = lp(e), i = slotAt(p); if (mode === 'surv'){ S.joy = { ox:p.x, oy:p.y, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); return; } if (mode === 'raid'){ raidTap(p); return; } if (mode === 'def'){ dDown(p, e); return; }
   if (useMode){ if (i >= 0 && grid[i]){ if (grid[i].t === 'stone'){ toast('진화 물건에만 쓸 수 있어요'); return; } if (grid[i].lv >= MAXLV){ toast('이미 최고 단계예요'); return; } useBoost(i); } return; }
   if (chest && Math.hypot(p.x - chest.x, p.y - (chest.y - 50)) < 90){ openChest(); return; }
   if (i >= 0 && grid[i]){ drag = { i, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); } });
-cv.addEventListener('pointermove', e => { if (mode === 'def'){ dMove(lp(e)); return; } if (drag){ const p = lp(e); drag.x = p.x; drag.y = p.y; sellZone(true, p.y > SELL_Y, '여기에 놓으면 판매 · 💰' + fmt(sellValue(grid[drag.i]))); rateTip(p); } });
+cv.addEventListener('pointermove', e => { if (mode === 'surv'){ if (S.joy){ const p = lp(e); S.joy.x = p.x; S.joy.y = p.y; } return; } if (mode === 'def'){ dMove(lp(e)); return; } if (drag){ const p = lp(e); drag.x = p.x; drag.y = p.y; sellZone(true, p.y > SELL_Y, '여기에 놓으면 판매 · 💰' + fmt(sellValue(grid[drag.i]))); rateTip(p); } });
 // 판매: 끌어서 아래 버튼 자리에 놓기. 값 = 지금 뽑기 가격 기준(뽑아서 바로 팔면 손해)
 const SELL_Y = 1170;
 function sellValue(it){ if (!it) return 0; const base = clamp(bestOf('stone') - 3, 1, 7), lv = it.t === 'stone' ? it.lv : MAXLV + it.lv;
@@ -740,7 +766,7 @@ function rateTip(p){ const el = document.getElementById('rateTip'); const it = p
   const r = mergeRate(it); el.className = 'on ' + (r >= 60 ? 'g' : r >= 30 ? 'y' : 'r');
   el.innerHTML = what + ' 성공 <b>' + r + '%</b>' + (inv.protect ? ' · 🛡 실패해도 보호 (' + inv.protect + '장)' : ' · 실패하면 1개 파괴'); }
 function sellZone(on, hot, txt){ const z = document.getElementById('sellZ'); z.classList.toggle('on', !!on); z.classList.toggle('hot', !!hot); if (txt) z.textContent = txt; }
-cv.addEventListener('pointerup', e => { sellZone(false); rateTip(null); if (mode === 'def'){ dUp(lp(e)); return; } if (!drag) return; const pp = lp(e), j = slotAt(pp), i = drag.i; drag = null;
+cv.addEventListener('pointerup', e => { sellZone(false); rateTip(null); if (mode === 'surv'){ S.joy = null; return; } if (mode === 'def'){ dUp(lp(e)); return; } if (!drag) return; const pp = lp(e), j = slotAt(pp), i = drag.i; drag = null;
   if (pp.y > SELL_Y){ sellItem(i); return; }
   if (j < 0 || j === i) return;
   if (canMerge(grid[i], grid[j])) merge(i, j);
@@ -944,6 +970,7 @@ function frame(now){
   if (defOn){ useScene('def'); const s2 = [shake, hitStop]; dUpdate(dt); if (mode !== 'def'){ shake = s2[0]; hitStop = s2[1]; tickFx(dt); } }
   if (mode === 'def'){ useScene('def'); dRender(dt); requestAnimationFrame(frame); return; }
   if (mode === 'raid'){ useScene('raid'); raidUpdate(dt); raidRender(dt); requestAnimationFrame(frame); return; }
+  if (mode === 'surv'){ useScene('surv'); survUpdate(dt); survRender(dt); requestAnimationFrame(frame); return; }
   useScene('idle');
   // 그리기
   const sc = cv.width/W; cx.setTransform(sc,0,0,sc,0,0);
@@ -1095,7 +1122,7 @@ document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click
 
 // ======================= 성벽 방어전 (이벤트 모드) =======================
 let mode = 'idle', defOn = false, tickets = 2, ticketT = 120;   // mode = 지금 보고 있는 화면
-function setView(v){ mode = v; document.body.classList.toggle('def', v === 'def'); document.body.classList.toggle('raid', v === 'raid'); drag = null; D.drag = null; lastEnter = ''; updEnter(); }
+function setView(v){ mode = v; document.body.classList.toggle('def', v === 'def'); document.body.classList.toggle('raid', v === 'raid'); document.body.classList.toggle('surv', v === 'surv'); drag = null; D.drag = null; lastEnter = ''; updEnter(); }
 let lastEnter = '';
 function updEnter(){
   const txt = defOn ? '⚔ 방어전 보기|' + (D.over ? '결과 확인' : '라운드 ' + D.round + ' · 성벽 ' + Math.ceil(D.wall/D.wallMax*100) + '%')
@@ -1373,7 +1400,7 @@ let pid = '', nick = '', bestStage = 1, rankDirty = true;
 const lsGet = k => { try { return localStorage.getItem(k); } catch(e){ return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e){} };
 function snapshot(){ return { v:1, gold, coin, stageNo, bestStage, sumCost, atkLv, atkCost, grid: grid.map(x => x ? [x.t, x.lv, x.tr||0] : 0), own, equipped, inv, tickets, ticketT,
-  pendingRare, pid, nick, usedCodes, up, raid: raidSave, stats, rb, relics, tower, skAuto, lastSeen: Date.now() }; }
+  pendingRare, pid, nick, usedCodes, up, raid: raidSave, stats, rb, relics, tower, skAuto, surv: survSave, lastSeen: Date.now() }; }
 function saveGame(){ if (IS_TEST || !pid) return; lsSet(SAVE_KEY, JSON.stringify(snapshot())); }
 function loadGame(){
   let d = null; try { d = JSON.parse(lsGet(SAVE_KEY) || 'null'); } catch(e){}
@@ -1384,7 +1411,7 @@ function loadGame(){
   equipped = (d.equipped || ['stone']).filter(t => own[t] && own[t].have);
   Object.assign(inv, d.inv || {}); tickets = d.tickets ?? 2; ticketT = d.ticketT ?? TICKET_TIME;
   pendingRare.length = 0; (d.pendingRare || []).forEach(v => pendingRare.push(v));
-  pid = d.pid || ''; nick = d.nick || ''; usedCodes = d.usedCodes || []; if (d.up) Object.assign(up, d.up); if (d.raid) Object.assign(raidSave, d.raid); if (d.stats) Object.assign(stats, d.stats); if (d.rb){ rb.count = d.rb.count||0; rb.stones = d.rb.stones||0; Object.assign(rb.perk, d.rb.perk||{}); } if (d.relics) relics = d.relics.slice(0,10).concat(new Array(10).fill(0)).slice(0,10); if (d.tower) Object.assign(tower, d.tower); skAuto = !!d.skAuto; atkLv = Math.min(atkLv, 21);
+  pid = d.pid || ''; nick = d.nick || ''; usedCodes = d.usedCodes || []; if (d.up) Object.assign(up, d.up); if (d.raid) Object.assign(raidSave, d.raid); if (d.stats) Object.assign(stats, d.stats); if (d.rb){ rb.count = d.rb.count||0; rb.stones = d.rb.stones||0; Object.assign(rb.perk, d.rb.perk||{}); } if (d.relics) relics = d.relics.slice(0,10).concat(new Array(10).fill(0)).slice(0,10); if (d.tower) Object.assign(tower, d.tower); if (d.surv) Object.assign(survSave, d.surv); skAuto = !!d.skAuto; atkLv = Math.min(atkLv, 21);
   return d;
 }
 // 자리를 비운 동안: 지금 스테이지 기준 초당 0.25마리 사냥으로 계산, 최대 8시간
@@ -1439,7 +1466,7 @@ const areaName = st => areaLabel(st);
 async function pushRank(){
   if (IS_TEST || !nick) return; rankDirty = false;
   try { await getToken(); } catch(e){ rankDirty = true; return; }
-  const body = { fields: { nick:{stringValue:nick}, best:{integerValue:String(bestStage)}, area:{stringValue:areaName(bestStage)}, power:{doubleValue:power()}, tower:{integerValue:String(tower.best)}, reb:{integerValue:String(rb.count)}, updated:{integerValue:String(Date.now())} } };
+  const body = { fields: { nick:{stringValue:nick}, best:{integerValue:String(bestStage)}, area:{stringValue:areaName(bestStage)}, power:{doubleValue:power()}, tower:{integerValue:String(tower.best)}, surv:{integerValue:String(survSave.best)}, survK:{integerValue:String(survSave.kills)}, reb:{integerValue:String(rb.count)}, updated:{integerValue:String(Date.now())} } };
   try { await getToken(); const r = await fbFetch(FB_DOC + '/h2d_players/' + pid + '?key=' + FB_KEY, { method:'PATCH', body: JSON.stringify(body) }); if (!r.ok) rankDirty = true; } catch(e){ rankDirty = true; }
 }
 async function loadRank(){
@@ -1891,6 +1918,231 @@ document.getElementById('chatIn').addEventListener('keydown', e => { if (e.key =
 // 창이 열려 있으면 2초마다, 닫혀 있으면 10초마다 (빨간 점 알림용)
 let chatTick = 0;
 setInterval(() => { if (IS_TEST || document.hidden) return; chatTick++; if (chatOpen || chatTick % 5 === 0) loadChat(); }, 2000);
+
+
+// ======================= 서바이벌 (뱀파이어 서바이버 방식) =======================
+const SV_TIME = 300, SV_TRIES = 3;
+let survSave = { best:0, kills:0, day:-1, left:SV_TRIES };
+function survFix(){ const d = kstDay(); if (survSave.day !== d){ survSave.day = d; survSave.left = SV_TRIES; } }
+const SV_WEP = {
+  stone:  { name:'돌 던지기',   icon:'stone',  desc: l => '가까운 적에게 돌 ' + (1 + Math.floor(l/2)) + '개' },
+  shield: { name:'회전 방패',   icon:'shield', desc: l => '내 주위를 도는 방패 ' + l + '개' },
+  sword:  { name:'검기',       icon:'sword',  desc: l => '앞쪽 넓게 베기' + (l >= 3 ? ' + 뒤쪽도' : '') },
+  orb:    { name:'마법 구슬',   icon:'orb',    desc: l => '폭발 범위 ' + (90 + l*18) + ' · 구슬 ' + (1 + Math.floor((l-1)/2)) + '개' },
+  arrow:  { name:'관통 화살',   icon:'arrow',  desc: l => '적을 뚫는 화살 ' + l + '발' },
+  egg:    { name:'꽃잎 오라',   icon:'egg',    desc: l => '주변 적에게 계속 피해 · 범위 ' + (90 + l*18) },
+};
+const SV_PAS = {
+  atk:  { name:'힘',        em:'💪', desc: l => '피해 +' + (20*l) + '%' },
+  cd:   { name:'날쌘 손',    em:'⚡', desc: l => '공격 대기 -' + (8*l) + '%' },
+  move: { name:'가벼운 신발', em:'👟', desc: l => '이동 속도 +' + (12*l) + '%' },
+  hp:   { name:'강철 심장',   em:'❤', desc: l => '최대 체력 +' + (25*l) + '% · 회복' },
+  mag:  { name:'자석',       em:'🧲', desc: l => '경험치 줍는 범위 +' + (40*l) + '%' },
+  regen:{ name:'재생',       em:'🌿', desc: l => '초당 체력 ' + l + '% 회복' },
+};
+const S = { on:false };
+const svBaseDmg = () => { let b = 0; for (const t of ['stone','shield','orb','sword','arrow','egg']){ const lv = bestOf(t); if (lv) b = Math.max(b, dmgOf(t, lv)); } return Math.max(22, b) * atkMul(up.atk); };
+const svEnemyHp0 = () => mobHp() * 0 + Math.max(15, svBaseDmg() * 0.8);
+function startSurv(){
+  survFix(); if (survSave.left <= 0) return; survSave.left--; saveGame();
+  const main = equipped[0] || 'stone', it = heroItem(main);
+  Object.assign(S, { on:true, over:false, paused:false, t:0, kills:0, lv:1, xp:0, need:3, spawnT:1.5, bossNext:60,
+    hero:{ x:0, y:0, hp:100, max:100, face:1, kick:0, hurt:0 }, hk: heroKey(main, own[main].star),
+    mobs:[], gems:[], shots:[], weps:{ [it === 'shield' ? 'shield' : it]: 1 }, wt:{}, pas:{ atk:0, cd:0, move:0, hp:0, mag:0, regen:0 },
+    base: svBaseDmg(), hp0: svEnemyHp0(), joy:null, area: areaIdx(Math.max(1, bestStage)) });
+  needArea(S.area);
+  FXS.surv.fx.length = FXS.surv.nums.length = 0; useScene('surv'); setView('surv');
+  document.getElementById('survL').classList.remove('on');
+  banner('서바이벌 시작!', '화면을 끌어서 움직이고 5분을 버티세요');
+}
+function svSpawn(boss){
+  const a = rnd(0, Math.PI*2), r = boss ? 520 : rnd(520, 640), k = Math.floor(rnd(0,4));
+  const grow = Math.pow(1 + S.t/35, 1.55);
+  const m = { x:S.hero.x + Math.cos(a)*r, y:S.hero.y + Math.sin(a)*r*1.2, k: boss ? bossKey(S.area) : mobKey(S.area, k), boss, h: boss ? 210 : rnd(78,96),
+    sp: (boss ? 50 : rnd(55, 85)) * (1 + S.t/450), flash:0, hitT:0, slow:0, phase:rnd(0,6) };
+  m.hp = m.max = Math.round(S.hp0 * grow * (boss ? 45 : 1)); S.mobs.push(m); return m;
+}
+function svNearest(n){ const h = S.hero; return S.mobs.slice().sort((a,b) => (a.x-h.x)**2+(a.y-h.y)**2 - ((b.x-h.x)**2+(b.y-h.y)**2)).slice(0, n); }
+function svHit(m, v, crit){
+  if (m.dead) return; v = Math.round(v * (1 + 0.2*S.pas.atk) * dmgBuff() * (crit ? critMul() : 1)); m.hp -= v; m.flash = 1;
+  if (crit || S.mobs.length < 60) num(m.x, m.y - m.h, v, crit);
+  if (m.hp <= 0){ m.dead = true; S.kills++; S.gems.push({ x:m.x, y:m.y - 20, v: m.boss ? 25 : 1 }); if (m.boss){ burst(m.x, m.y - 80, 30, '#ffcf5a'); shake = 20; addFx({type:'img', k:'boom', x:m.x, y:m.y-80, s0:0.8, s1:2, life:.5, add:true}); } else if (Math.random() < 0.3) burst(m.x, m.y - 30, 4, '#c8ff9a'); }
+}
+const svCrit = () => Math.random() < 0.15 + critAdd();
+function svWeapons(dt){
+  const h = S.hero, cdm = (1 - 0.08*S.pas.cd) * spdBuff(), B = S.base;
+  for (const w in S.weps){ const l = S.weps[w];
+    if (w === 'shield'){ // 회전 방패: 상시
+      const n = l, R = 100 + l*8, ang = S.t * (2.6 + l*0.2);
+      for (let i=0;i<n;i++){ const a = ang + i/n*Math.PI*2, x = h.x + Math.cos(a)*R, y = h.y - 40 + Math.sin(a)*R*0.8;
+        for (const m of S.mobs) if (!m.dead && m.hitT <= 0 && Math.abs(m.x-x) < 42 && Math.abs(m.y - m.h*0.4 - y) < 52){ m.hitT = 0.45; svHit(m, B*(0.5 + 0.15*l), svCrit()); const d = Math.hypot(m.x-h.x, m.y-h.y) || 1; m.x += (m.x-h.x)/d*24; m.y += (m.y-h.y)/d*24; } }
+      continue; }
+    if (w === 'egg'){ // 꽃잎 오라: 0.5초마다
+      S.wt.egg = (S.wt.egg || 0) - dt; if (S.wt.egg > 0) continue; S.wt.egg = 0.5;
+      const R = 90 + l*18; for (const m of S.mobs) if (!m.dead && Math.hypot(m.x-h.x, (m.y-h.y)*1.2) < R){ svHit(m, B*(0.18 + 0.06*l), false); m.slow = 0.6; }
+      continue; }
+    const CDS = { stone:0.75, sword:1.1, orb:1.7, arrow:0.65 };
+    S.wt[w] = (S.wt[w] || 0) - dt; if (S.wt[w] > 0) continue; S.wt[w] = CDS[w] * cdm;
+    if (!S.mobs.length) continue;
+    if (w === 'stone'){ svNearest(1 + Math.floor(l/2)).forEach(m => S.shots.push({ k:'stone', x:h.x, y:h.y-60, m, v:B*(0.9 + 0.25*l), sp:900, lv:bestOf('stone')||1 })); }
+    else if (w === 'orb'){ const n = 1 + Math.floor((l-1)/2); for (let i=0;i<n;i++){ const m = S.mobs[Math.floor(Math.random()*S.mobs.length)]; if (m && Math.hypot(m.x-h.x, m.y-h.y) < 700) S.shots.push({ k:'orb', x:h.x, y:h.y-70, m, v:B*(1.6 + 0.4*l), sp:620, r:90 + l*18, lv:bestOf('orb')||1 }); } }
+    else if (w === 'arrow'){ const t = svNearest(1)[0]; if (!t) continue; const a0 = Math.atan2(t.y - t.h*0.4 - (h.y-50), t.x - h.x);
+      for (let i=0;i<l;i++){ const a = a0 + (i - (l-1)/2) * 0.16; S.shots.push({ k:'arrow', x:h.x, y:h.y-50, vx:Math.cos(a)*1100, vy:Math.sin(a)*1100, life:0.7, v:B*(0.7 + 0.18*l), hits:new Set() }); } }
+    else if (w === 'sword'){ h.kick = 1; const nt = svNearest(1)[0]; const fd = nt ? (nt.x >= h.x ? 1 : -1) : h.face; const dirs = l >= 3 ? [fd, -fd] : [fd], R = 170 + l*22;
+      for (const dr of dirs){ addFx({type:'img', k:'slash', x:h.x + dr*R*0.55, y:h.y - 50, s0:0.5, s1:0.8 + l*0.08, life:.22, add:true, rot: dr > 0 ? 0 : Math.PI});
+        for (const m of S.mobs) if (!m.dead && (m.x - h.x)*dr > -20 && Math.hypot(m.x-h.x, (m.y-h.y)*1.3) < R) svHit(m, B*(1.4 + 0.35*l), svCrit()); }
+      shake = Math.max(shake, 3); }
+  }
+}
+function svShots(dt){
+  for (let i=S.shots.length-1;i>=0;i--){ const s = S.shots[i];
+    if (s.k === 'arrow'){ s.x += s.vx*dt; s.y += s.vy*dt; s.life -= dt; if (s.life <= 0){ S.shots.splice(i,1); continue; }
+      for (const m of S.mobs) if (!m.dead && !s.hits.has(m) && Math.abs(m.x-s.x) < 34 && Math.abs(m.y - m.h*0.45 - s.y) < m.h*0.5){ s.hits.add(m); svHit(m, s.v, svCrit()); }
+      continue; }
+    const m = s.m, tx = m.x, ty = m.y - m.h*0.45, d = Math.hypot(tx - s.x, ty - s.y), st = s.sp*dt;
+    if (d <= st + 10 || m.dead){ S.shots.splice(i,1);
+      if (s.k === 'orb'){ addFx({type:'img', k:'boom', x:tx, y:ty, s0:0.3, s1:0.5 + s.r/300, life:.35, add:true}); shake = Math.max(shake, 5);
+        for (const o of S.mobs) if (!o.dead && Math.hypot(o.x-tx, (o.y - o.h*0.45 - ty)*1.2) < s.r) svHit(o, s.v * (o === m ? 1 : 0.7), svCrit()); }
+      else if (!m.dead){ addFx({type:'img', k:'shock', x:tx, y:ty, s0:0.1, s1:0.35, life:.18, add:true}); svHit(m, s.v, svCrit()); }
+      continue; }
+    s.x += (tx - s.x)/d*st; s.y += (ty - s.y)/d*st; s.rot = (s.rot||0) + dt*14;
+  }
+}
+// 레벨업 카드
+function svLevelUp(){
+  S.paused = true; const opts = [];
+  const wn = Object.keys(S.weps).length;
+  for (const w in SV_WEP) if ((S.weps[w] || 0) < 5 && (S.weps[w] || wn < 4)) opts.push({ kind:'w', k:w });
+  for (const p in SV_PAS) if (S.pas[p] < 5) opts.push({ kind:'p', k:p });
+  const pick = []; while (pick.length < 3 && opts.length) pick.push(opts.splice(Math.floor(Math.random()*opts.length), 1)[0]);
+  if (!pick.length){ S.hero.hp = S.hero.max; S.paused = false; return; }
+  S.cards = pick;
+  document.getElementById('svCards').innerHTML = pick.map((o,i) => {
+    if (o.kind === 'w'){ const l = (S.weps[o.k] || 0) + 1, W2 = SV_WEP[o.k];
+      return '<button class="svc" data-i="' + i + '"><img src="' + itemIcon(W2.icon, Math.max(1, bestOf(W2.icon) || 3)) + '"><b>' + W2.name + ' <span>' + (l === 1 ? 'NEW' : 'Lv.' + l) + '</span></b><small>' + W2.desc(l) + '</small></button>'; }
+    const P = SV_PAS[o.k], l = S.pas[o.k] + 1;
+    return '<button class="svc" data-i="' + i + '"><div class="em">' + P.em + '</div><b>' + P.name + ' <span>Lv.' + l + '</span></b><small>' + P.desc(l) + '</small></button>'; }).join('');
+  document.getElementById('svLv').textContent = 'Lv.' + S.lv + ' 달성!';
+  document.getElementById('survUp').classList.add('on');
+}
+document.getElementById('svCards').onclick = e => { const b = e.target.closest('.svc'); if (!b || !S.cards) return; const o = S.cards[+b.dataset.i];
+  if (o.kind === 'w') S.weps[o.k] = (S.weps[o.k] || 0) + 1; else { S.pas[o.k]++; if (o.k === 'hp'){ const old = S.hero.max; S.hero.max = Math.round(100 * (1 + 0.25*S.pas.hp)); S.hero.hp += S.hero.max - old + S.hero.max*0.3; S.hero.hp = Math.min(S.hero.max, S.hero.hp); } }
+  S.cards = null; document.getElementById('survUp').classList.remove('on'); S.paused = false; };
+function survUpdate(dt){
+  if (!S.on || S.over || S.paused) return;
+  const h = S.hero; S.t += dt;
+  // 이동
+  let mx = 0, my = 0; if (S.joy){ const dx = S.joy.x - S.joy.ox, dy = S.joy.y - S.joy.oy, d = Math.hypot(dx, dy); if (d > 8){ const k = Math.min(1, d/70); mx = dx/d*k; my = dy/d*k; } }
+  if (keys.size){ if (keys.has('ArrowLeft') || keys.has('a')) mx -= 1; if (keys.has('ArrowRight') || keys.has('d')) mx += 1; if (keys.has('ArrowUp') || keys.has('w')) my -= 1; if (keys.has('ArrowDown') || keys.has('s')) my += 1; const d = Math.hypot(mx,my); if (d > 1){ mx /= d; my /= d; } }
+  const spd = 230 * (1 + 0.12*S.pas.move); h.x += mx*spd*dt; h.y += my*spd*dt; if (Math.abs(mx) > 0.1) h.face = mx > 0 ? 1 : -1; h.moving = Math.hypot(mx,my) > 0.1;
+  // 소환
+  S.spawnT -= dt; const iv = Math.max(0.06, 0.9 - S.t/330);
+  while (S.spawnT <= 0){ S.spawnT += iv; if (S.mobs.length < 160) svSpawn(false); }
+  if (S.t >= S.bossNext){ S.bossNext += 60; svSpawn(true); banner('보스 등장!', BOSS_NAMES[S.area] + ' 출현'); shake = 18; }
+  // 적
+  const hitDmg = 4 * (1 + S.t/90); h.hurt = Math.max(0, h.hurt - dt*4); h.iframe = Math.max(0, (h.iframe||0) - dt);
+  for (const m of S.mobs){ if (m.dead) continue; m.flash = Math.max(0, m.flash - dt*7); m.hitT -= dt; m.slow = Math.max(0, m.slow - dt); m.phase += dt*8;
+    const dx = h.x - m.x, dy = h.y - m.y, d = Math.hypot(dx, dy) || 1, sp = m.sp * (m.slow > 0 ? 0.55 : 1);
+    if (d > 30){ m.x += dx/d*sp*dt; m.y += dy/d*sp*dt; m.fl = dx < 0; }
+    if (d < (m.boss ? 80 : 42) && h.iframe <= 0){ h.hp -= hitDmg * (m.boss ? 3 : 1) * (has('stone') ? 1 - guardPct()*0.5 : 1); h.hurt = 1; h.iframe = 0.5; } }
+  // 너무 멀어진 적은 앞으로 다시
+  for (const m of S.mobs) if (!m.dead && Math.hypot(m.x-h.x, m.y-h.y) > 1100){ const a = rnd(0, Math.PI*2); m.x = h.x + Math.cos(a)*600; m.y = h.y + Math.sin(a)*700; }
+  S.mobs = S.mobs.filter(m => !m.dead);
+  h.hp = Math.min(h.max, h.hp + h.max*0.01*S.pas.regen*dt);
+  svWeapons(dt); svShots(dt);
+  // 경험치
+  const mag = 130 * (1 + 0.4*S.pas.mag);
+  for (let i=S.gems.length-1;i>=0;i--){ const g = S.gems[i], d = Math.hypot(g.x-h.x, g.y-(h.y-40));
+    if (d < mag){ g.x += (h.x - g.x)*Math.min(1, dt*10); g.y += (h.y - 40 - g.y)*Math.min(1, dt*10); }
+    if (d < 30){ S.gems.splice(i,1); S.xp += g.v; } }
+  if (S.gems.length > 400) S.gems.splice(0, S.gems.length - 400);
+  if (S.xp >= S.need){ S.xp -= S.need; S.lv++; S.need = Math.round(3 + S.lv*3 + S.lv*S.lv*0.35); svLevelUp(); }
+  if (h.hp <= 0){ h.hp = 0; endSurv(false); }
+  else if (S.t >= SV_TIME) endSurv(true);
+}
+function endSurv(win){
+  S.over = true; const sec = Math.floor(Math.min(S.t, SV_TIME));
+  const g = Math.round(sec * 20 * rewardMul() * goldMul()), ak = Math.floor(sec/60) + (win ? 3 : 0), c = Math.floor(sec/60) + (win ? 5 : 0);
+  gold += g; giveAwk(ak); coin += c; updCoin(); updBtns();
+  let list = '<div>💰 골드 +' + fmt(g) + '</div>' + (ak ? '<div>🔷 각성석 +' + ak + '</div>' : '') + (c ? '<div>💎 희망코인 +' + c + '</div>' : '');
+  if (win && Math.random() < 0.3){ const ri = Math.floor(Math.random()*10); setTimeout(() => giveRelic(ri, '서바이벌 완주'), 800); list += '<div>📜 유물 발견!</div>'; }
+  const newBest = sec > survSave.best || (sec === survSave.best && S.kills > survSave.kills);
+  if (newBest){ survSave.best = sec; survSave.kills = S.kills; rankDirty = true; pushRank(); }
+  saveGame();
+  document.getElementById('svT').textContent = win ? '5분 생존 성공!' : '쓰러졌어요…';
+  document.getElementById('svR').textContent = Math.floor(sec/60) + '분 ' + (sec%60) + '초 · 처치 ' + S.kills + ' · Lv.' + S.lv + (newBest ? ' · 최고 기록!' : '');
+  document.getElementById('svList').innerHTML = list;
+  document.getElementById('survEnd').classList.add('on');
+}
+document.getElementById('svOk').onclick = () => { document.getElementById('survEnd').classList.remove('on'); S.on = false; FXS.surv.fx.length = FXS.surv.nums.length = 0; useScene('idle'); setView('idle'); openSurv(); };
+document.getElementById('sQuit').onclick = () => { if (S.on && !S.over){ if (S.paused){ S.paused = false; document.getElementById('survUp').classList.remove('on'); } endSurv(false); } };
+const keys = new Set();
+addEventListener('keydown', e => { if (mode === 'surv') keys.add(e.key.length === 1 ? e.key.toLowerCase() : e.key); });
+addEventListener('keyup', e => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
+function survRender(dt){
+  const sc = cv.width/W; cx.setTransform(sc,0,0,sc,0,0);
+  const h = S.hero; shake *= Math.pow(0.002, dt); const ox = rnd(-shake,shake)*0.5, oy = rnd(-shake,shake)*0.5;
+  const camX = h.x - W/2, camY = h.y - H*0.52;
+  cx.save(); cx.translate(ox, oy);
+  // 바닥
+  const gk = 'g' + pad2(S.area), gi = IMG[gk] || IMG.g00;
+  if (gi){ if (!PATS['s'+gk]){ const c = document.createElement('canvas'); c.width = c.height = 384; c.getContext('2d').drawImage(gi,0,0,384,384); PATS['s'+gk] = cx.createPattern(c,'repeat'); }
+    cx.save(); cx.translate(-((camX%384)+384)%384, -((camY%384)+384)%384); cx.fillStyle = PATS['s'+gk]; cx.fillRect(-20,-20,W+800,H+800); cx.restore(); }
+  cx.translate(-camX, -camY);
+  // 꽃잎 오라
+  if (S.weps.egg){ const R = 90 + S.weps.egg*18; cx.save(); cx.globalAlpha = 0.25 + 0.08*Math.sin(S.t*6); cx.fillStyle = '#ff9ad8'; cx.beginPath(); cx.ellipse(h.x, h.y-10, R, R/1.2, 0, 0, Math.PI*2); cx.fill(); cx.restore(); }
+  // 경험치 보석
+  cx.fillStyle = '#7fe0ff'; for (const g of S.gems){ if (Math.abs(g.x - h.x) > W || Math.abs(g.y - h.y) > H) continue; cx.save(); cx.translate(g.x, g.y); cx.rotate(Math.PI/4); const s = g.v > 1 ? 16 : 9; cx.fillStyle = g.v > 1 ? '#ffd040' : '#7fe0ff'; cx.fillRect(-s/2,-s/2,s,s); cx.restore(); }
+  // 적 + 영웅 (y순)
+  const ents = S.mobs.filter(m => Math.abs(m.x - h.x) < W*0.7 && Math.abs(m.y - h.y) < H*0.65);
+  ents.push({ hero:true, y:h.y }); ents.sort((a,b) => a.y - b.y);
+  for (const e of ents){
+    if (e.hero){ const k = h.kick = Math.max(0, h.kick - dt*6), bob = h.moving ? Math.abs(Math.sin(S.t*12))*6 : 0;
+      shadow(h.x, h.y, 48, 1); drawImgFoot(S.hk, h.x, h.y - bob, 150, { flip: h.face < 0, flash: h.hurt*0.5, sx: 1 + 0.05*k });
+      const w = 90; cx.fillStyle = 'rgba(0,0,0,.7)'; rr(h.x - w/2 - 2, h.y + 10, w + 4, 12, 6); cx.fill(); cx.fillStyle = h.hp/h.max > 0.35 ? '#4fd65a' : '#ff5a4a'; rr(h.x - w/2, h.y + 12, w*Math.max(0,h.hp/h.max), 8, 4); cx.fill(); continue; }
+    const m = e; shadow(m.x, m.y, m.h*0.38, 1);
+    drawImgFoot(m.k, m.x, m.y - Math.abs(Math.sin(m.phase))*4, m.h, { flip: !m.fl, flash: m.flash });
+    if (m.boss){ const w = 160; cx.fillStyle = 'rgba(0,0,0,.7)'; rr(m.x - w/2, m.y - m.h - 18, w, 12, 6); cx.fill(); cx.fillStyle = '#e8433a'; rr(m.x - w/2, m.y - m.h - 18, w*Math.max(0, m.hp/m.max), 12, 6); cx.fill(); } }
+  // 회전 방패
+  if (S.weps.shield){ const l = S.weps.shield, R = 100 + l*8, ang = S.t * (2.6 + l*0.2), sl = Math.max(1, bestOf('shield') || 3);
+    for (let i=0;i<l;i++){ const a = ang + i/l*Math.PI*2; drawItem('shield', sl, h.x + Math.cos(a)*R, h.y - 40 + Math.sin(a)*R*0.8, 24, a); } }
+  // 투사체
+  for (const s of S.shots){ if (s.k === 'arrow'){ cx.save(); cx.translate(s.x, s.y); cx.rotate(Math.atan2(s.vy, s.vx)); cx.strokeStyle = '#e6ffd0'; cx.lineWidth = 5; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(-40,0); cx.lineTo(10,0); cx.stroke(); cx.restore(); }
+    else drawItem(s.k, s.lv, s.x, s.y, s.k === 'orb' ? 22 : 16, s.rot); }
+  drawFx(dt); drawNums(dt);
+  cx.restore();
+  // 화면 위 정보
+  const r = S.xp / S.need; cx.fillStyle = 'rgba(0,0,0,.7)'; cx.fillRect(0, 0, W, 22); cx.fillStyle = '#7fe0ff'; cx.fillRect(0, 0, W*r, 22);
+  cx.save(); cx.textAlign = 'center'; cx.lineJoin = 'round'; cx.font = '400 18px Jua'; cx.lineWidth = 4; cx.strokeStyle = '#000';
+  cx.strokeText('Lv.' + S.lv, W/2, 18); cx.fillStyle = '#fff'; cx.fillText('Lv.' + S.lv, W/2, 18);
+  const left = Math.max(0, SV_TIME - S.t), tt = Math.floor(left/60) + ':' + String(Math.floor(left%60)).padStart(2,'0');
+  cx.font = '400 48px Jua'; cx.lineWidth = 8; cx.strokeText(tt, W/2, 80); cx.fillStyle = left < 30 ? '#ff8a5a' : '#fff'; cx.fillText(tt, W/2, 80);
+  cx.font = '400 24px Jua'; cx.lineWidth = 5; cx.textAlign = 'left'; const kt = '💀 ' + S.kills; cx.strokeText(kt, 24, 64); cx.fillStyle = '#ffe2a0'; cx.fillText(kt, 24, 64);
+  // 가진 무기·능력
+  let x = 24; for (const w in S.weps){ drawItem(SV_WEP[w].icon, Math.max(1, bestOf(SV_WEP[w].icon) || 3), x + 18, 112, 16, 0); cx.font = '400 16px Jua'; cx.lineWidth = 4; cx.strokeText(S.weps[w], x + 30, 132); cx.fillStyle = '#fff'; cx.fillText(S.weps[w], x + 30, 132); x += 44; }
+  // 조이스틱
+  if (S.joy){ cx.globalAlpha = 0.35; cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(S.joy.ox, S.joy.oy, 70, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 0.7;
+    const dx = S.joy.x - S.joy.ox, dy = S.joy.y - S.joy.oy, d = Math.hypot(dx,dy), k = d > 70 ? 70/d : 1; cx.beginPath(); cx.arc(S.joy.ox + dx*k, S.joy.oy + dy*k, 30, 0, Math.PI*2); cx.fill(); cx.globalAlpha = 1; }
+  else if (S.t < 6){ cx.font = '400 28px Jua'; cx.textAlign = 'center'; cx.lineWidth = 6; const hint = '화면을 누른 채 끌면 움직여요'; cx.strokeText(hint, W/2, H - 160); cx.fillStyle = '#fff'; cx.fillText(hint, W/2, H - 160); }
+  cx.restore();
+}
+// 로비
+async function openSurv(){
+  survFix();
+  document.getElementById('svInfo').textContent = '최고 ' + Math.floor(survSave.best/60) + '분 ' + (survSave.best%60) + '초 (처치 ' + survSave.kills + ') · 오늘 남은 도전 ' + survSave.left + ' / ' + SV_TRIES;
+  const go = document.getElementById('svGo'); go.disabled = survSave.left <= 0; go.textContent = survSave.left > 0 ? '🧛 시작하기' : '내일 다시 도전할 수 있어요';
+  document.getElementById('survL').classList.add('on');
+  const list = document.getElementById('svList2'); list.innerHTML = '<div class="rk-msg">불러오는 중…</div>';
+  try {
+    const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_players'}], orderBy:[{field:{fieldPath:'surv'}, direction:'DESCENDING'}], limit:30 } }) });
+    const arr = await r.json(); if (!r.ok) throw new Error();
+    const rows = arr.filter(e => e.document).map(e => ({ id: e.document.name.split('/').pop(), nick: e.document.fields.nick?.stringValue || '???', s: +(e.document.fields.surv?.integerValue || 0), k: +(e.document.fields.survK?.integerValue || 0) })).filter(o => o.s > 0);
+    list.innerHTML = rows.length ? rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + (i < 3 ? ['🥇','🥈','🥉'][i] : i+1) + '</b><span>' + esc(o.nick) + '</span><em>' + Math.floor(o.s/60) + '분 ' + (o.s%60) + '초<small>처치 ' + o.k + '</small></em></div>').join('') : '<div class="rk-msg">아직 기록이 없어요. 첫 생존자가 되어보세요!</div>';
+  } catch(e){ list.innerHTML = '<div class="rk-msg">순위를 불러오지 못했어요</div>'; }
+}
+document.getElementById('bSurv').onclick = openSurv;
+document.getElementById('svX').onclick = () => document.getElementById('survL').classList.remove('on');
+document.getElementById('svGo').onclick = startSurv;
 
 // ---- 시작 ----
 if (!IS_TEST){
