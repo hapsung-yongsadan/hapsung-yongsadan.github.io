@@ -1614,7 +1614,7 @@ async function loadRank(){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
 updQBtn();
-document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-19)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
+document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-20)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
@@ -1845,8 +1845,8 @@ function giveRelic(i, src){
 }
 
 // ---- 환생 ----
-// 환생 가능 스테이지: 첫 환생 40, 환생할 때마다 +10 (최대 150) — 환생 보너스가 쌓이니까 점점 더 멀리 가야 함
-const rebMin = () => Math.min(150, 40 + 10*rb.count), REB_ATK = 0.2, REB_GOLD = 0.2;
+// 환생 가능: 마왕성 60단계(스테이지 105)부터
+const rebMin = () => 105, REB_ATK = 0.2, REB_GOLD = 0.2;
 let rb = { count:0, stones:0, perk:{ atk:0, gold:0, start:0, draw:0, off:0 } };
 const PERKS = {
   atk:   { name:'영혼의 힘',   icon:'⚔', max:999, desc: l => '모든 피해 ×' + (1 + 0.25*l).toFixed(2), cost: l => Math.round(5 * Math.pow(1.35, l)) },
@@ -1870,11 +1870,11 @@ let rebArm = false;
 function renderGrow(){
   const gain = rebStones(stageNo);
   let h = '<div class="gsec"><div class="gh">🔮 환생 <small>환생 ' + rb.count + '회 · 환생석 <b>' + rb.stones + '</b>개</small></div>';
-  h += '<div class="gdesc">' + rebMin() + '스테이지 이상에서 환생할 수 있어요 <small>(환생할 때마다 +10스테이지씩 높아져요)</small><br>환생하면 <b>스테이지 · 골드 · 가방 물건 · 골드 강화</b>가 처음으로 돌아가요.<br>영웅 · 별 · 조각 · 유물 · 희망코인 · 환생석 능력은 그대로예요.<br>환생석은 <b>환생하는 순간의 스테이지</b>가 높을수록 많이 받아요.</div>';
+  h += '<div class="gdesc">' + areaLabel(rebMin()) + ' 이상에서 환생할 수 있어요<br>환생하면 <b>스테이지 · 골드 · 가방 물건 · 골드 강화</b>가 처음으로 돌아가요.<br>영웅 · 별 · 조각 · 유물 · 희망코인 · 환생석 능력은 그대로예요.<br>환생석은 <b>환생하는 순간의 스테이지</b>가 높을수록 많이 받아요.</div>';
   h += '<div class="gdesc" style="color:#ffe9b0;border:1.5px solid rgba(255,215,120,.4);border-radius:10px;padding:2cqw;margin:1cqw 0 2cqw">🌟 <b>환생 보너스 (자동 · 영구)</b> — 환생 ' + rb.count + '회<br>모든 피해 <b>×' + (1 + REB_ATK*rb.count).toFixed(1) + '</b> · 골드 <b>+' + Math.round(REB_GOLD*rb.count*100) + '%</b> · 시작 골드 <b>' + fmt(100 + 2000*rb.count) + '</b><br><small>환생할 때마다 피해 +20% · 골드 +20% · 시작 골드 +2000 · 각성석 +3 · 💎 +2</small></div>';
   h += stageNo >= rebMin()
     ? '<button class="gbig' + (rebArm ? ' warn' : '') + '" data-g="reb">' + (rebArm ? '정말 환생할까요? 한 번 더 누르면 환생!' : '지금 환생하기 · 환생석 +' + gain) + '</button>'
-    : '<button class="gbig" disabled>' + rebMin() + '스테이지부터 환생 가능 (지금 ' + stageNo + ')</button>';
+    : '<button class="gbig" disabled>' + areaLabel(rebMin()) + '부터 환생 가능 (지금 ' + areaLabel(stageNo) + ')</button>';
   for (const k in PERKS){ const P = PERKS[k], l = rb.perk[k], mx = l >= P.max, c = P.cost(l);
     h += '<div class="row"><div class="pic ic">' + P.icon + '</div><div class="tx">' + P.name + ' <span class="st">Lv.' + l + '</span><small>' + P.desc(l) + (mx ? ' · 최대' : ' → <span style="color:#9dff9a">' + P.desc(l+1) + '</span>') + '</small></div>' +
       '<button data-p="' + k + '"' + (mx || rb.stones < c ? ' disabled' : '') + '>' + (mx ? '최대' : '🔮 ' + c) + '</button></div>'; }
