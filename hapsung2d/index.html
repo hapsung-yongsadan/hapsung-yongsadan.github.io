@@ -164,6 +164,19 @@
   .rel b{display:block;font-family:Jua;font-weight:400;font-size:3.2cqw;color:#fff}
   .rel small{font-size:2.6cqw;color:#cfe8ff}
   #bChat{position:absolute;left:3%;top:22.4%;z-index:7;font-family:Jua;font-size:3.2cqw;color:#fff;background:linear-gradient(180deg,#1f6a5a,#0c3a30);border:1.5px solid #8affd8;border-radius:10px;padding:1cqw 2.6cqw}
+  #bMe{position:absolute;left:3%;top:26.8%;z-index:7;font-family:Jua;font-size:3.2cqw;color:#fff;background:linear-gradient(180deg,#2a4a8a,#0c1a4a);border:1.5px solid #8ab8ff;border-radius:10px;padding:1cqw 2.6cqw}
+  #meB{overflow-y:auto;max-height:68cqh;touch-action:pan-y;text-align:left}
+  .mecard{display:flex;align-items:center;gap:3cqw;padding:2.5cqw;border-radius:14px;background:linear-gradient(180deg,rgba(90,60,20,.55),rgba(30,20,8,.55));border:1.5px solid rgba(255,215,120,.45)}
+  .mecard img{width:18cqw;height:18cqw;object-fit:contain}
+  .mecard b{font-family:Jua;font-size:5.4cqw;color:#ffe9b0;font-weight:400}
+  .mecard small{display:block;font-size:3cqw;color:#cdb98f;line-height:1.5}
+  .mepow{font-family:Jua;font-size:6cqw;color:#ffd04a;text-shadow:0 0 8px rgba(255,200,60,.5)}
+  .mst{display:flex;justify-content:space-between;align-items:baseline;padding:1.6cqw .5cqw;border-bottom:1px solid rgba(242,200,106,.12);font-family:Jua;font-size:3.7cqw;color:#f2dca8}
+  .mst em{font-style:normal;color:#9dff9a;font-size:4cqw}
+  .mst small{display:block;font-family:sans-serif;font-size:2.6cqw;color:#a8987a;margin-top:.4cqw}
+  .megrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.6cqw;margin-top:1cqw}
+  .megrid div{background:rgba(0,0,0,.3);border:1px solid rgba(242,200,106,.2);border-radius:10px;padding:1.6cqw 1cqw;text-align:center;font-family:Jua;font-size:3cqw;color:#cdb98f}
+  .megrid div b{display:block;font-weight:400;font-size:4cqw;color:#ffe9b0}
   #bChat i{position:absolute;top:-1cqw;right:-1cqw;width:2.8cqw;height:2.8cqw;border-radius:50%;background:#ff4d4d;box-shadow:0 0 6px #ff4d4d;display:none}
   #bChat i.on{display:block}
   .chatbox{height:78%;max-height:78%;min-height:0}
@@ -290,6 +303,8 @@
   <button id="bQ" class="idle">⚙ 효과 높음</button>
   <button id="bGrow" class="idle">🔮 환생 · 유물</button>
   <button id="bChat" class="idle">💬 채팅<i id="chatDot"></i></button>
+  <button id="bMe" class="idle">👤 내 정보</button>
+  <div class="modal" id="meM"><div class="box"><div class="mh">👤 내 정보<button id="meX">✕</button></div><div id="meB"></div></div></div>
   <div id="skills"></div>
   <div class="modal" id="chat"><div class="box chatbox"><div class="mh">💬 채팅<button id="chatX">✕</button></div><div id="chatL"></div>
     <div class="crow"><input id="chatIn" maxlength="60" placeholder="메시지 입력 (60자)" autocomplete="off"><button id="chatGo">보내기</button></div></div></div>
@@ -1574,7 +1589,7 @@ async function loadRank(){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
 updQBtn();
-document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-16)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
+document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-17)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
@@ -1845,6 +1860,51 @@ function renderGrow(){
   document.getElementById('growB').innerHTML = h;
 }
 document.getElementById('bGrow').onclick = () => { rebArm = false; renderGrow(); document.getElementById('grow').classList.add('on'); };
+// ---- 👤 내 정보 ----
+function renderMe(){
+  const pct = v => (v*100 >= 10 ? Math.round(v*100) : (v*100).toFixed(1)) + '%';
+  const spdLv = Math.min(20, atkLv-1), spdCut = 1 - spdMul(spdLv) * (1 - 0.02*rl(7));
+  const crit = 0.18 + critAdd() + (has('arrow') ? (5+3*PST('arrow'))/100 : 0);
+  const st = (name, val, sub) => '<div class="mst"><span>' + name + (sub ? '<small>' + sub + '</small>' : '') + '</span><em>' + val + '</em></div>';
+  const hk = equipped[0] || 'stone';
+  let h = '<div class="mecard"><img src="../proto2d/img/' + heroKey(hk, own[hk].star) + '.png"><div style="flex:1"><b>' + esc(nick || '이름 없음') + '</b>'
+    + (rb.count ? ' <i class="reb" style="display:inline-block;font-style:normal;font-size:2.8cqw;color:#e8d0ff;background:rgba(150,80,220,.35);border:1px solid #c78bff;border-radius:99px;padding:.3cqw 1.4cqw">환생 ' + rb.count + '</i>' : '')
+    + '<small>지금 ' + areaLabel(stageNo) + ' · 최고 ' + areaLabel(bestStage) + '</small><div class="mepow">⚔ 전투력 ' + fmt(power()) + '</div></div></div>';
+  // 전투 스탯
+  const aGold = Math.pow(1.1, up.atk), aSoul = 1 + 0.25*rb.perk.atk, aReb = 1 + REB_ATK*rb.count, aRel = (1 + 0.08*rl(4)) * (1 + 0.15*rl(9));
+  h += '<div class="gsec"><div class="gh">⚔ 전투 능력</div>';
+  h += st('공격력 배율', '×' + fmt2(atkMul(up.atk)), '골드 강화 ×' + fmt2(aGold) + ' · 영혼의 힘 ×' + aSoul.toFixed(2) + ' · 환생 보너스 ×' + aReb.toFixed(1) + ' · 유물 ×' + aRel.toFixed(2));
+  h += st('공격 속도', '+' + pct(1/(1-spdCut) - 1), '공격 간격 -' + pct(spdCut) + ' (골드 강화 Lv.' + spdLv + (rl(7) ? ' · 크라켄의 촉수' : '') + ')');
+  h += st('치명타 확률', pct(Math.min(1, crit)), '기본 18% · 골드 강화 +' + (up.crit*0.6).toFixed(1) + '%' + (rl(3) ? ' · 유물 +' + rl(3) + '%' : '') + (has('arrow') ? ' · 궁수 패시브 +' + (5+3*PST('arrow')) + '%' : ''));
+  h += st('치명타 피해', '×' + critMul().toFixed(1), '기본 ×2.3 · 골드 강화 +' + (up.cdmg*0.1).toFixed(1) + (rl(5) ? ' · 유물 +' + (0.2*rl(5)).toFixed(1) : ''));
+  if (rl(6)) h += st('보스에게 주는 피해', '+' + (10*rl(6)) + '%', '서리 드래곤의 비늘');
+  if (rl(1)) h += st('받는 피해', '-' + (3*rl(1)) + '%', '히드라의 비늘');
+  h += '</div>';
+  // 성장
+  h += '<div class="gsec"><div class="gh">💰 성장 · 보상</div>';
+  h += st('골드 획득', '+' + Math.round((goldMul()-1)*100) + '%', '골드 강화 +' + (up.gold*5) + '% · 황금의 축복 +' + (20*rb.perk.gold) + '% · 환생 보너스 +' + Math.round(REB_GOLD*rb.count*100) + '%' + (rl(0) ? ' · 고블린 왕의 왕관 ×' + (1+0.1*rl(0)).toFixed(1) : ''));
+  h += st('돌 뽑기 단계', 'Lv.' + clamp(Math.max(bestOf('stone') - 3, 1 + rb.perk.draw), 1, 9), '좋은 돌 뽑기 +' + rb.perk.draw);
+  h += st('오프라인 보상', '최대 ' + (8 + rb.perk.off) + '시간', '긴 휴식 Lv.' + rb.perk.off);
+  h += st('환생 후 시작', (1 + 2*rb.perk.start) + '스테이지', '빠른 출발 Lv.' + rb.perk.start + ' · 시작 골드 ' + fmt(100 + 2000*rb.count));
+  h += '</div>';
+  // 장착 영웅
+  h += '<div class="gsec"><div class="gh">🧙 장착 영웅 <small>' + equipped.length + ' / ' + MAX_EQ + '</small></div>';
+  for (const t of equipped){ const o = own[t], it = heroItem(t), lv = bestOf(it);
+    h += '<div class="row eq"><img class="pic" src="../proto2d/img/' + heroKey(t, o.star) + '.png"><div class="tx">' + TYPES[t].who + ' <span class="st">' + '★'.repeat(Math.min(5, o.star)) + (o.star > 5 ? '<span style="color:#ff9aff">+' + (o.star-5) + '</span>' : '') + '</span>'
+      + '<small>' + IT(it).name + ' 피해 ×' + starBonus(o.star).toFixed(1) + ' · 최고 ' + (lv ? IT(it).names[lv-1] + ' Lv.' + lv : '없음') + '<br><span style="color:#9dff9a">패시브 · ' + PASSIVE[t].name + ': ' + PASSIVE[t].desc(o.star) + '</span></small></div></div>'; }
+  h += '</div>';
+  // 기록
+  const ti = arTierOf(arena.score);
+  h += '<div class="gsec"><div class="gh">🏅 기록</div><div class="megrid">'
+    + '<div>최고 사냥터<b>' + bestStage + '</b></div><div>환생<b>' + rb.count + '회</b></div><div>환생석<b>' + rb.stones + '</b></div>'
+    + '<div>무한의 탑<b>' + tower.best + '층</b></div><div>서바이벌<b>' + Math.floor(survSave.best/60) + '분 ' + (survSave.best%60) + '초</b></div><div>투기장<b style="color:' + AR_TIER[ti].c + '">' + AR_EM[ti] + ' ' + arena.score + '</b></div>'
+    + '<div>투기 전적<b>' + arena.win + '승 ' + arena.lose + '패</b></div><div>최고 연승<b>' + (arena.maxStreak||0) + '</b></div><div>유물<b>' + relics.filter(x => x > 0).length + ' / 10</b></div>'
+    + '<div>희망코인<b>' + fmt(coin) + '</b></div><div>각성석<b>' + (inv.awk||0) + '</b></div><div>강화권<b>' + inv.boost + '</b></div>'
+    + '</div></div>';
+  document.getElementById('meB').innerHTML = h;
+}
+document.getElementById('bMe').onclick = () => { renderMe(); document.getElementById('meM').classList.add('on'); };
+document.getElementById('meX').onclick = () => document.getElementById('meM').classList.remove('on');
 document.getElementById('growX').onclick = () => document.getElementById('grow').classList.remove('on');
 document.getElementById('growB').onclick = e => { const b = e.target.closest('button'); if (!b || b.disabled) return;
   if (b.dataset.g === 'reb'){ if (!rebArm){ rebArm = true; renderGrow(); return; } rebArm = false; doRebirth(); return; }
