@@ -8,8 +8,9 @@
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
   html,body{margin:0;height:100%;background:#0d0a08;overflow:hidden;font-family:'Noto Sans KR',sans-serif;color:#fff;touch-action:none}
-  #wrap{position:fixed;inset:0;display:flex;justify-content:center;align-items:center}
-  #stage{position:relative;aspect-ratio:9/16;height:100%;max-width:100%;overflow:hidden;background:#1a2a14;container-type:size}
+  #wrap{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;container-type:size}
+  /* 화면 비율이 9:16보다 길쭉한 폰에서도 게임 화면이 찌그러지지 않게: 가로·세로 중 작은 쪽에 맞춤 */
+  #stage{position:relative;aspect-ratio:9/16;width:min(100cqw, calc(100cqh * 9 / 16));height:auto;overflow:hidden;background:#1a2a14;container-type:size}
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
   .top{position:absolute;left:0;right:0;top:0;padding:2.2% 3% 0;display:flex;gap:2cqw;align-items:center;z-index:5;pointer-events:none}
   .stg{font-family:Jua;font-size:4.6cqw;text-shadow:0 2px 0 #000}
@@ -1524,7 +1525,7 @@ async function loadRank(){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
 updQBtn();
-document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-8)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
+document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-9)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
