@@ -1111,21 +1111,31 @@ function updPanels(){
 const bagCost = () => [800, 3000, 10000][(grid.length - 12)/4] || 0;
 const TICKET_COST = 1000, PROTECT_COST = 5, BOOST_COST = 8, STONE10_COST = 30;
 const packCost = () => Math.round(sumCost * 5 * 0.8);
+// 누르고 있으면 계속 사지는 상품
+const SHOP_HOLD = ['bag','ticket','awkbuy','protect','boost','stone10','pack'];
+let shopHoldT = null;
+document.getElementById('paneS').addEventListener('pointerdown', e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return; const a = b.dataset.a; if (!SHOP_HOLD.includes(a)) return;
+  shopDo(a); let n = 0; clearInterval(shopHoldT);
+  shopHoldT = setInterval(() => { n++; if (n < 4) return; if (!shopDo(a)) clearInterval(shopHoldT); }, 130);
+});
+['pointerup','pointerleave','pointercancel'].forEach(ev => addEventListener(ev, () => clearInterval(shopHoldT)));
 document.getElementById('paneS').onclick = e => {
-  const b = e.target.closest('button'); if (!b || b.disabled) return; const a = b.dataset.a;
-  if (a === 'bag'){ const c = bagCost(); if (grid.length >= BAG_MAX || gold < c) return; gold -= c; for (let i=0;i<4;i++) grid.push(null); layout(); toast('가방이 ' + grid.length + '칸이 됐어요'); }
-  else if (a === 'ticket'){ if (gold < TICKET_COST) return; gold -= TICKET_COST; tickets++; lastEnter = ''; toast('방어전 입장권 +1'); }
-  else if (a === 'awkbuy'){ if (coin < 15) return; coin -= 15; giveAwk(1); updCoin(); toast('각성석 +1 (보유 ' + inv.awk + '개)'); }
-  else if (a === 'protect'){ if (coin < PROTECT_COST) return; coin -= PROTECT_COST; inv.protect++; updCoin(); toast('파괴방지 주문서 +1 (보유 ' + inv.protect + '장)'); }
-  else if (a === 'boost'){ if (coin < BOOST_COST) return; coin -= BOOST_COST; inv.boost++; updCoin(); toast('랜덤 강화권 +1 (보유 ' + inv.boost + '장)'); }
+  const b = e.target.closest('button'); if (!b || b.disabled) return; const a = b.dataset.a; if (SHOP_HOLD.includes(a)) return; shopDo(a); };
+function shopDo(a){
+  if (a === 'bag'){ const c = bagCost(); if (grid.length >= BAG_MAX || gold < c) return false; gold -= c; for (let i=0;i<4;i++) grid.push(null); layout(); toast('가방이 ' + grid.length + '칸이 됐어요'); }
+  else if (a === 'ticket'){ if (gold < TICKET_COST) return false; gold -= TICKET_COST; tickets++; lastEnter = ''; toast('방어전 입장권 +1'); }
+  else if (a === 'awkbuy'){ if (coin < 15) return false; coin -= 15; giveAwk(1); updCoin(); toast('각성석 +1 (보유 ' + inv.awk + '개)'); }
+  else if (a === 'protect'){ if (coin < PROTECT_COST) return false; coin -= PROTECT_COST; inv.protect++; updCoin(); toast('파괴방지 주문서 +1 (보유 ' + inv.protect + '장)'); }
+  else if (a === 'boost'){ if (coin < BOOST_COST) return false; coin -= BOOST_COST; inv.boost++; updCoin(); toast('랜덤 강화권 +1 (보유 ' + inv.boost + '장)'); }
   else if (a === 'useboost'){ if (inv.boost <= 0) return; if (!grid.some(x => x && x.t !== 'stone' && x.lv < MAXLV)){ toast('강화할 진화 물건이 없어요'); return; } setUse('boost'); return; }
-  else if (a === 'stone10'){ if (coin < STONE10_COST) return; if (grid.indexOf(null) < 0){ toast('가방에 빈 칸이 필요해요'); return; } coin -= STONE10_COST; updCoin(); put({t:'stone', lv:MAXLV}); toast('10단계 돌 획득!'); }
+  else if (a === 'stone10'){ if (coin < STONE10_COST) return false; if (grid.indexOf(null) < 0){ toast('가방에 빈 칸이 필요해요'); return false; } coin -= STONE10_COST; updCoin(); put({t:'stone', lv:MAXLV}); toast('10단계 돌 획득!'); }
   else if (a === 'coupon'){ document.getElementById('cpIn').value = ''; document.getElementById('cpErr').textContent = ''; document.getElementById('coupon').classList.add('on'); return; }
   else if (a === 'charge'){ toast('실제 결제는 정식 출시 때 연결돼요'); return; }
-  else if (a === 'pack'){ const c = packCost(); if (gold < c) return; if (grid.filter(x => !x).length < 5){ toast('빈 칸이 5개 필요해요'); return; }
+  else if (a === 'pack'){ const c = packCost(); if (gold < c) return false; if (grid.filter(x => !x).length < 5){ toast('빈 칸이 5개 필요해요'); return false; }
     gold -= c; const lv = clamp(bestOf('stone')-3,1,7); for (let i=0;i<5;i++) put({t:'stone', lv}); sumCost = Math.round(sumCost*1.05+1); toast('돌 5개 획득!'); }
-  goldShown = Math.min(goldShown, gold); updBtns(); sig = ''; updPanels();
-};
+  goldShown = Math.min(goldShown, gold); updBtns(); sig = ''; updPanels(); saveGame(); return true;
+}
 document.getElementById('paneH').onclick = document.getElementById('paneC').onclick = e => {
   const b = e.target.closest('button'); if (!b) return; const t = b.dataset.k, a = b.dataset.a;
   if (a === 'eq'){ const i = equipped.indexOf(t); if (i >= 0) equipped.splice(i,1); else if (equipped.length >= MAX_EQ){ toast('장착은 ' + MAX_EQ + '명까지예요'); return; } else { equipped.push(t); toast(TYPES[t].who + ' 장착 · ' + PASSIVE[t].name + ' 발동!'); } sig = ''; updPanels(); }
@@ -1502,8 +1512,11 @@ async function pushStats(){
 // ---- 랭킹 (Firebase) ----
 function power(){ let p = 0; for (const t in TYPES){ const hi = heroItem(t), lv = bestOf(hi); if (lv) p += dmgOf(hi, lv) * bonus(t); } return Math.round(p * atkMul(up.atk) * (1 + (0.18 + critAdd()) * (critMul() - 1))); }
 const areaName = st => areaLabel(st);
+let pushAt = 0;
 async function pushRank(){
-  if (IS_TEST || !nick) return; rankDirty = false;
+  if (IS_TEST || !nick) return;
+  if (Date.now() - pushAt < 20000){ rankDirty = true; return; }   // 너무 자주 쓰지 않게
+  pushAt = Date.now(); rankDirty = false;
   try { await getToken(); } catch(e){ rankDirty = true; return; }
   const body = { fields: { nick:{stringValue:nick}, best:{integerValue:String(bestStage)}, area:{stringValue:areaName(bestStage)}, power:{doubleValue:power()}, tower:{integerValue:String(tower.best)}, surv:{integerValue:String(survSave.best)}, survK:{integerValue:String(survSave.kills)}, arena:{integerValue:String(arena.score)}, aSeason:{integerValue:String(arena.season || arSeason())}, ['ab_' + (arena.season || arSeason())]:{integerValue:String(arena.best)}, aPow:{doubleValue:power()}, aTeam:{stringValue:arTeamStr()}, reb:{integerValue:String(rb.count)}, updated:{integerValue:String(Date.now())} } };
   try { await getToken(); const r = await fbFetch(FB_DOC + '/h2d_players/' + pid + '?key=' + FB_KEY, { method:'PATCH', body: JSON.stringify(body) }); if (!r.ok) rankDirty = true; } catch(e){ rankDirty = true; }
@@ -1545,7 +1558,7 @@ async function loadRank(){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
 updQBtn();
-document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-12)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
+document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-13)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
@@ -2365,6 +2378,10 @@ function arUpdate(dt){
 }
 function endArena(win){
   AT.over = true; AT.shots.length = 0; const opp = AT.opp, my = arena.score, os = opp.score || 1000;
+  if (opp.bot){ document.getElementById('arT').textContent = win ? '🏆 연습 승리!' : '연습 패배…'; document.getElementById('arT').style.color = win ? '#ffe27a' : '#ff9a8a';
+    document.getElementById('arP').textContent = (nick || '나') + ' VS ' + opp.nick; document.getElementById('arS').innerHTML = '연습전은 점수 변동이 없어요';
+    document.getElementById('arList').innerHTML = '<div style="opacity:.7">서버가 돌아오면 친구 팀과 대결할 수 있어요</div>';
+    setTimeout(() => document.getElementById('arR').classList.add('on'), 700); return; }
   let d, bonus = 0;
   const weak = my - os > 300;   // 점수가 훨씬 낮은 상대만 골라 잡는 걸 막기
   if (win){ arena.streak++; arena.maxStreak = Math.max(arena.maxStreak || 0, arena.streak); bonus = weak ? 0 : Math.min(50, 5 * (arena.streak - 1)); d = weak ? 1 : clamp(Math.round(20 + (os - my)/20), 8, 40) + bonus; arena.win++; }
@@ -2377,7 +2394,7 @@ function endArena(win){
   if (win && weak) list += '<div style="opacity:.75">점수 차이가 300점 넘게 나는 약한 상대라 점수 +1만 올라요</div>';
   for (let i = 1; i <= t1; i++) if (!arena.got.includes(i)){ arena.got.push(i); const T = AR_TIER[i]; giveAwk(T.awk); coin += T.coin;
     list += '<div style="color:' + T.c + '">' + AR_EM[i] + ' ' + T.n + ' 첫 달성! 각성석 +' + T.awk + (T.coin ? ' · 💎 +' + T.coin : '') + '</div>'; }
-  updCoin(); updBtns(); sig = ''; rankDirty = true; saveGame(); pushRank();
+  updCoin(); updBtns(); sig = ''; rankDirty = true; saveGame();
   AT.result = { win, d };
   document.getElementById('arT').textContent = win ? (arena.streak >= 2 ? '🔥 ' + arena.streak + '연승!' : '🏆 승리!') : '패배…';
   document.getElementById('arT').style.color = win ? '#ffe27a' : '#ff9a8a';
@@ -2422,7 +2439,18 @@ function arenaRender(dt){
 document.getElementById('arSkip').onclick = () => { if (!AT.on || AT.over) return; let n = 0; while (!AT.over && n++ < 4000) arUpdate(0.05); FXS.arena.fx.length = FXS.arena.nums.length = 0; };
 document.getElementById('arOk').onclick = () => { document.getElementById('arR').classList.remove('on'); AT.on = false; useScene('idle'); setView('idle'); openArena(); };
 document.getElementById('arAgain').onclick = () => { document.getElementById('arR').classList.remove('on'); AT.on = false; const o = AT.opp; useScene('idle'); setView('idle'); startArena(o); };
-let arRows = [], arTab = 'opp';
+let arRows = [], arTab = 'opp', oppAt = 0, oppNote = '';
+// 상대 목록은 3분 동안 다시 받지 않음 (서버 읽기 절약) · 서버가 안 되면 저장해 둔 목록, 그것도 없으면 연습 상대
+function arBots(){ const p = Math.max(1, power()), pick = () => Object.keys(TYPES).sort(() => Math.random() - 0.5).slice(0,3).map(t => t + ':' + Math.max(1, Math.min(10, (own[t].star||3))) + ':' + (bestOf(heroItem(t)) || 6) + ':' + t).join(',');
+  return [['🤖 연습 허수아비', 0.6], ['🤖 연습 기사단', 1.0], ['🤖 연습 챔피언', 1.5]].map(([n, k], i) => ({ id:'bot' + i, nick:n, score: arena.score, pow: p*k, team: pick(), bot:true })); }
+async function arOpps(force){
+  if (!force && arRows.length && !arRows[0].bot && Date.now() - oppAt < 180000) return;
+  if (rankDirty) await pushRank();
+  try { arRows = await arQuery('aPow'); oppAt = Date.now(); oppNote = ''; lsSet('h2d_arOpp', JSON.stringify(arRows)); }
+  catch(e){ let c = null; try { c = JSON.parse(lsGet('h2d_arOpp') || 'null'); } catch(_){}
+    if (c && c.length){ arRows = c; oppNote = '지금 서버가 쉬는 중이라 마지막으로 받아둔 친구 팀과 싸워요 (점수는 서버가 돌아오면 올라가요)'; }
+    else { arRows = arBots(); oppNote = '지금 서버가 쉬는 중이라 연습 상대만 있어요 · 연습전은 점수·보상 없음'; } }
+}
 async function arQuery(field){
   const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_players'}], orderBy:[{field:{fieldPath:field}, direction:'DESCENDING'}], limit:40 } }) });
   const arr = await r.json(); if (!r.ok) throw new Error(); const se = arSeason();
@@ -2441,14 +2469,14 @@ async function openArena(){
   arFix(); arHead();
   document.getElementById('arL').classList.add('on');
   const list = document.getElementById('arList2'); list.innerHTML = '<div class="rk-msg">불러오는 중…</div>';
-  if (rankDirty || !arRows.length) await pushRank();
+
   try {
     if (arTab === 'opp'){
-      arRows = await arQuery('aPow');
+      await arOpps(false);
       if (!arRows.some(o => o.id === pid)) arRows.push({ id:pid, nick: nick || '나', score: arena.score, pow: power(), team: arTeamStr() });
       arRows.forEach(o => { if (o.id === pid) o.score = arena.score; });
       arRows.sort((a,b) => b.score - a.score || b.pow - a.pow);
-      list.innerHTML = '<div class="rk-msg" style="padding:1cqw 0 2cqw;font-size:3cqw">도전 횟수 제한 없음 · 이기면 점수↑ · 연승할수록 보너스 점수가 쌓여요</div>' + arRows.map((o,i) => { const me = o.id === pid;
+      list.innerHTML = (oppNote ? '<div class="rk-msg" style="padding:1cqw 0;font-size:3cqw;color:#ffb060">' + oppNote + '</div>' : '') + '<div class="rk-msg" style="padding:1cqw 0 2cqw;font-size:3cqw">도전 횟수 제한 없음 · 이기면 점수↑ · 연승할수록 보너스 점수가 쌓여요</div>' + arRows.map((o,i) => { const me = o.id === pid;
         return '<div class="rk' + (me ? ' me' : '') + '"><span>' + tierTag(o.score) + esc(o.nick) + '<small style="display:block;font-size:2.6cqw;color:#b8a88a">전투력 ' + fmt(o.pow) + '</small></span><em>' + o.score + '점</em>'
           + (me ? '<button class="arGo" disabled>나</button>' : '<button class="arGo" data-i="' + i + '">⚔ 도전</button>') + '</div>'; }).join('');
       list.querySelectorAll('.arGo[data-i]').forEach(b => b.onclick = () => startArena(arRows[+b.dataset.i]));
