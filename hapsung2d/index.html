@@ -134,6 +134,12 @@
   .pcx{font-family:Jua;font-size:2.8cqw;color:#fff;padding:.6cqw 1.8cqw;border-radius:99px;border:1.5px solid #ff9aff;background:linear-gradient(180deg,#9a2a9a,#4a0c5a);margin-left:1cqw;vertical-align:middle}
   #bBst{position:absolute;right:2.5%;top:60.6cqh;z-index:7;display:none;font-family:Jua;font-size:3.3cqw;color:#fff;padding:1cqw 2.6cqw;border-radius:99px;border:2px solid #ffd77a;background:linear-gradient(180deg,#b07a10,#5a3a04);box-shadow:0 0 10px rgba(255,210,90,.5)}
   #bBst.on{display:block}
+  #bagPg{position:absolute;left:1%;top:64.6cqh;z-index:7;display:none;flex-direction:column;gap:1.2cqw}
+  #bagPg.on{display:flex} body.def #bagPg, body.raid #bagPg, body.surv #bagPg, body.arena #bagPg{display:none!important}
+  #bagPg button{width:6.4cqw;padding:1.2cqw 0;font-family:Jua;font-size:3.6cqw;line-height:1;color:#e9dcc0;border-radius:8px;border:1.5px solid rgba(255,215,120,.4);background:rgba(0,0,0,.45)}
+  #bagPg button small{display:block;font-size:2cqw;color:#bba887;margin-top:.4cqw}
+  #bagPg button.on{color:#3a2200;background:linear-gradient(180deg,#ffe58a,#e8a830);border-color:#ffe58a}
+  #bagPg button.on small{color:#5a3a00}
   #enhPick{position:absolute;right:2.5%;top:51cqh;z-index:9;display:none;flex-direction:column;gap:1cqw;width:60%;padding:1.6cqw;border-radius:12px;background:rgba(10,6,2,.92);border:1.5px solid #ffd77a}
   #enhPick.on{display:flex}
   #enhPick button{font-family:Jua;font-size:3.3cqw;color:#fff;text-align:left;padding:1.2cqw 2cqw;border-radius:10px;border:1px solid rgba(255,215,120,.5);background:linear-gradient(180deg,#5a3a10,#2a1a04)}
@@ -297,7 +303,7 @@
   <div class="pane idle" id="paneU"></div>
   <div id="sellZ">여기에 놓으면 판매</div>
   <div id="rateTip"></div>
-  <button id="bBst" class="idle">✨ 강화 <b id="bBstN">0</b></button><div id="enhPick" class="idle"></div>
+  <button id="bBst" class="idle">✨ 강화 <b id="bBstN">0</b></button><div id="enhPick" class="idle"></div><div id="bagPg" class="idle"></div>
   <div id="useBar"><span id="useTxt">강화할 물건을 누르세요</span><button id="useCancel">취소</button></div>
   <button id="bEnter" class="idle">⚔ 성벽 방어전<small id="enterN">입장권 2 / 3</small></button>
   <button class="dui quit" id="dQuit">포기하고 나가기</button>
@@ -614,10 +620,17 @@ const grid = new Array(12).fill(null);
 const BAG_MAX = 36, BAG_BASE_MAX = 24, LATE_ST = 115;   // 25칸부터·초월 무기 뽑기권은 마왕성 70(스테이지 115)부터
 const lateOk = () => bestStage >= LATE_ST;
 // 칸 수에 맞춰 격자 크기 다시 계산 (12=4x3, 16=4x4, 20=5x4, 24=6x4)
-function layout(){ const n = grid.length; COLS = n <= 16 ? 4 : n <= 20 ? 5 : n <= 24 ? 6 : n <= 28 ? 7 : n <= 32 ? 8 : 9; ROWS = Math.ceil(n/COLS);
-  CW = Math.min(148, 640/COLS); CH = Math.min(112, 336/ROWS); GX = (W - COLS*CW)/2; GY = 830; }
+// 가방은 한 쪽에 24칸까지 · 그보다 많으면 쪽(페이지)을 넘겨서 봄
+const PAGE = 24; let bagPage = 0;
+const bagPages = () => Math.ceil(grid.length / PAGE);
+function layout(){ const n = Math.min(PAGE, grid.length); bagPage = Math.min(bagPage, bagPages()-1); COLS = n <= 16 ? 4 : n <= 20 ? 5 : 6; ROWS = Math.ceil(n/COLS); updBagPg();
+  const pg = bagPages() > 1; CW = Math.min(148, (pg ? 596 : 640)/COLS); CH = Math.min(112, 336/ROWS); GX = (W - COLS*CW)/2 + (pg ? 30 : 0); GY = 830; }
 grid[0] = {t:'stone', lv:1}; grid[1] = {t:'stone', lv:1}; grid[2] = {t:'stone', lv:2};
-const slotPos = i => ({ x: GX + (i%COLS)*CW + CW/2, y: GY + Math.floor(i/COLS)*CH + CH/2 });
+const slotPos = i => { const k = i - bagPage*PAGE; if (k < 0 || k >= PAGE) return { x:-999, y:-999, off:true }; return { x: GX + (k%COLS)*CW + CW/2, y: GY + Math.floor(k/COLS)*CH + CH/2 }; };
+function updBagPg(){ const el = document.getElementById('bagPg'); if (!el) return; const n = bagPages(); el.classList.toggle('on', n > 1 && tab === 0);
+  const h = n > 1 ? Array.from({length:n}, (_,k) => { const st = k*PAGE, cnt = grid.slice(st, st+PAGE).filter(Boolean).length; return '<button data-p="' + k + '"' + (k === bagPage ? ' class="on"' : '') + '>' + (k+1) + '<small>' + cnt + '/' + Math.min(PAGE, grid.length - st) + '</small></button>'; }).join('') : ''; if (el.dataset.h === h) return; el.dataset.h = h; el.innerHTML = h;
+  el.querySelectorAll('button').forEach(b => b.onclick = () => { bagPage = +b.dataset.p; updBagPg(); sig = ''; }); }
+let pgHoverT = 0;
 const bestOf = t => { let b = 0; for (const it of grid) if (it && it.t === t && it.lv > b) b = it.lv; return b; };
 const pop = {};
 let drag = null;
@@ -822,12 +835,15 @@ function updBtns(){ document.getElementById('cSum').textContent = '💰 ' + sumC
   document.getElementById('bSum').classList.toggle('off', gold < sumCost); const anyUp = Object.keys(UPG).some(k => upLv(k) < UPG[k].max && gold >= UPG[k].cost(upLv(k))); document.getElementById('bAtk').classList.toggle('off', !anyUp); const du = document.getElementById('dotU'); if (du) du.classList.toggle('on', anyUp); if (tab === 4) updUpg(); }
 
 function lp(e){ const r = cv.getBoundingClientRect(); return { x:(e.clientX - r.left) / r.width * W, y:(e.clientY - r.top) / r.height * H }; }
-function slotAt(p){ const c = Math.floor((p.x - GX)/CW), r = Math.floor((p.y - GY)/CH); if (c<0||c>=COLS||r<0||r>=ROWS) return -1; return r*COLS + c; }
+function slotAt(p){ const c = Math.floor((p.x - GX)/CW), r = Math.floor((p.y - GY)/CH); if (c<0||c>=COLS||r<0||r>=ROWS) return -1; const i = bagPage*PAGE + r*COLS + c; return i < grid.length ? i : -1; }
 cv.addEventListener('pointerdown', e => { const p = lp(e), i = slotAt(p); if (mode === 'surv'){ S.joy = { ox:p.x, oy:p.y, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); return; } if (mode === 'raid'){ raidTap(p); return; } if (mode === 'def'){ dDown(p, e); return; }
   if (useMode){ if (i >= 0 && grid[i]){ if (grid[i].t === 'stone'){ toast('진화 물건에만 쓸 수 있어요'); return; } if (grid[i].lv >= MAXLV){ toast('이미 최고 단계예요'); return; } useBoost(i); } return; }
   if (chest && Math.hypot(p.x - chest.x, p.y - (chest.y - 50)) < 90){ openChest(); return; }
   if (i >= 0 && grid[i]){ drag = { i, x:p.x, y:p.y }; cv.setPointerCapture(e.pointerId); } });
-cv.addEventListener('pointermove', e => { if (mode === 'surv'){ if (S.joy){ const p = lp(e); S.joy.x = p.x; S.joy.y = p.y; } return; } if (mode === 'def'){ dMove(lp(e)); return; } if (drag){ const p = lp(e); drag.x = p.x; drag.y = p.y; sellZone(true, p.y > SELL_Y, '여기에 놓으면 판매 · 💰' + fmt(sellValue(grid[drag.i]))); rateTip(p); } });
+cv.addEventListener('pointermove', e => { if (mode === 'surv'){ if (S.joy){ const p = lp(e); S.joy.x = p.x; S.joy.y = p.y; } return; } if (mode === 'def'){ dMove(lp(e)); return; } if (drag){ const p = lp(e); drag.x = p.x; drag.y = p.y;
+    // 끌고 가서 쪽 버튼 위에 잠깐 대면 그 쪽으로 넘어감
+    const pg = document.elementsFromPoint(e.clientX, e.clientY).find(el => el.dataset && el.dataset.p != null && el.parentNode && el.parentNode.id === 'bagPg');
+    if (pg && +pg.dataset.p !== bagPage){ if (!pgHoverT) pgHoverT = Date.now(); else if (Date.now() - pgHoverT > 350){ bagPage = +pg.dataset.p; updBagPg(); pgHoverT = 0; } } else if (!pg) pgHoverT = 0; sellZone(true, p.y > SELL_Y, '여기에 놓으면 판매 · 💰' + fmt(sellValue(grid[drag.i]))); rateTip(p); } });
 // 판매: 끌어서 아래 버튼 자리에 놓기. 값 = 지금 뽑기 가격 기준(뽑아서 바로 팔면 손해)
 const SELL_Y = 1170;
 function sellValue(it){ if (!it) return 0; const base = clamp(bestOf('stone') - 3, 1, 7), lv = it.t === 'stone' ? it.lv : MAXLV + it.lv;
@@ -863,6 +879,7 @@ document.getElementById('bBst').onclick = () => {
   const el = document.getElementById('enhPick');
   el.innerHTML = ks.map(k => '<button data-k="' + k + '">' + ENH[k].em + ' ' + ENH[k].name + ' <b>' + inv[k] + '</b><small>' + ENH[k].rate + '</small></button>').join('');
   el.querySelectorAll('button').forEach(b => b.onclick = () => boostStart(b.dataset.k)); el.classList.toggle('on'); };
+setInterval(updBagPg, 400);
 setInterval(() => { const el = document.getElementById('bBst'), on = enhTotal() > 0 && tab === 0 && !useMode; el.classList.toggle('on', on); if (!on) document.getElementById('enhPick').classList.remove('on'); document.getElementById('bBstN').textContent = enhTotal(); }, 300);
 // 합성 확률 안내: 손가락·탭에 가리지 않게 가방 위쪽에 크게 표시
 function rateTip(p){ const el = document.getElementById('rateTip'); const it = p && drag ? grid[drag.i] : null;
@@ -906,7 +923,7 @@ function drawPanel(){
   cx.fillStyle = '#f2c86a'; cx.fillRect(0,770,W,4); cx.fillStyle='rgba(0,0,0,.35)'; cx.fillRect(0,774,W,8);
   cx.textAlign='right'; cx.font = '400 19px Jua'; cx.fillStyle='#d8c39a';
   const sl = bestOf('stone'); cx.fillText((inv.protect ? '🛡' + inv.protect + '  ' : '') + (sl >= MAXLV ? '진화 가능!' : '돌 ' + sl + '/10'), W-40, 812);
-  for (let i=0;i<grid.length;i++){ const p = slotPos(i), x = p.x - CW/2 + 6, y = p.y - CH/2 + 6, w = CW-12, h = CH-12, it = grid[i];
+  for (let i=bagPage*PAGE;i<Math.min(grid.length, (bagPage+1)*PAGE);i++){ const p = slotPos(i), x = p.x - CW/2 + 6, y = p.y - CH/2 + 6, w = CW-12, h = CH-12, it = grid[i];
     cx.fillStyle = 'rgba(0,0,0,.4)'; rr(x,y+4,w,h,16); cx.fill();
     const eq = it && grid.findIndex(o => o && o.t === it.t && o.lv === bestOf(it.t)) === i;
     const g2 = cx.createLinearGradient(0,y,0,y+h); g2.addColorStop(0, eq ? '#6a4a1a' : '#4a3420'); g2.addColorStop(1, eq ? '#3e2a0e' : '#2a1c10'); cx.fillStyle = g2; rr(x,y,w,h,16); cx.fill();
@@ -920,7 +937,7 @@ function drawPanel(){
     drawItem(it.t, it.lv, p.x, p.y - 10*K, 32*s*K, wob);
     cx.font = '400 ' + Math.round(20*Math.max(0.8,K)) + 'px Jua'; cx.textAlign = 'center'; cx.lineWidth = 5; cx.strokeStyle = '#000'; cx.lineJoin='round';
     if (it.tr){ cx.save(); cx.globalCompositeOperation = 'lighter'; cx.globalAlpha = 0.45 + 0.2*Math.sin(time*4 + i); cx.strokeStyle = '#ffe27a'; cx.lineWidth = 3; cx.beginPath(); cx.arc(p.x, p.y - 10*K, 40*K, 0, Math.PI*2); cx.stroke(); cx.restore(); }
-    const sm = COLS >= 7;   // 칸이 좁으면 이름 빼고 짧게
+    const sm = false;
     const lab = it.tr ? (sm ? '' : IT(it.t).name + ' ') + '✦' + it.tr : (it.t === 'stone' || sm ? '' : IT(it.t).name + ' ') + 'Lv.' + it.lv;
     const ly = p.y + CH*0.39; cx.strokeText(lab, p.x, ly); cx.fillStyle = it.t === 'stone' ? '#e8e0d0' : `hsl(${hue(it.lv)},100%,78%)`; cx.fillText(lab, p.x, ly);
     if (it.t === 'stone' && it.lv === MAXLV){ cx.font='400 16px Jua'; cx.fillStyle='#ffe27a'; cx.strokeText('진화 가능', x+w/2, y+16); cx.fillText('진화 가능', x+w/2, y+16); }
@@ -1649,7 +1666,7 @@ async function loadRank(){
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
 updQBtn();
-document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-23)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
+document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-24)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
