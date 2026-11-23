@@ -211,7 +211,9 @@
   #rankL{overflow-y:auto;flex:1;touch-action:pan-y}
   .rk{display:flex;align-items:center;gap:3cqw;padding:2cqw 2.5cqw;border-bottom:1px solid rgba(242,200,106,.15);font-family:Jua;font-size:4cqw;text-align:left}
   .rk b{width:9cqw;text-align:center;font-weight:400;color:#ffe27a}
-  .rk span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rk span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rk span .ttl{display:table;margin:0 0 .8cqw}
+  .rk .reb{display:inline-block;font-size:2.8cqw;color:#e8d0ff;background:rgba(150,80,220,.35);border:1px solid #c78bff;border-radius:99px;padding:.3cqw 1.4cqw;margin-left:1cqw;vertical-align:middle}
   .rk em{font-style:normal;text-align:right;color:#f2dca8}
   .rk em small{display:block;font-size:2.8cqw;color:#b8a88a}
   .rk.me{background:rgba(242,200,106,.18);border-radius:10px}
@@ -1566,7 +1568,7 @@ async function loadRank(){
       .sort((a,b) => b.best - a.best || b.power - a.power);
     setHuntTop(rows);
     if (!rows.length){ list.innerHTML = '<div class="rk-msg">아직 기록이 없어요. 첫 번째 주인공이 되어보세요!</div>'; return; }
-    list.innerHTML = rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + MEDAL(i) + '</b><span>' + ttl('hunt', i) + esc(o.nick) + (o.reb ? ' <small style="color:#c78bff">환생' + o.reb + '</small>' : '') + '</span><em>' + areaName(Math.max(1,o.best)) + '<small>전투력 ' + fmt(o.power) + '</small></em></div>').join('');
+    list.innerHTML = rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + MEDAL(i) + '</b><span>' + ttl('hunt', i) + esc(o.nick) + (o.reb ? '<i class="reb">환생 ' + o.reb + '</i>' : '') + '</span><em>' + areaName(Math.max(1,o.best)) + '<small>전투력 ' + fmt(o.power) + '</small></em></div>').join('');
   } catch(e){ list.innerHTML = '<div class="rk-msg">' + netMsg('랭킹') + '</div>'; }
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
