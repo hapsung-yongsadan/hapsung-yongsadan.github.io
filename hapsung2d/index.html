@@ -198,6 +198,15 @@
   .rk em{font-style:normal;text-align:right;color:#f2dca8}
   .rk em small{display:block;font-size:2.8cqw;color:#b8a88a}
   .rk.me{background:rgba(242,200,106,.18);border-radius:10px}
+  #svPick{display:flex;justify-content:center;gap:2cqw;flex-wrap:wrap;margin:1cqw 0}
+  #svPick button{width:15cqw;padding:1cqw 0 1.2cqw;border-radius:12px;background:rgba(0,0,0,.35);border:2px solid rgba(242,200,106,.25);color:#f2dca8;font-family:Jua;font-size:2.6cqw;line-height:1.1}
+  #svPick button img{width:11cqw;height:11cqw;object-fit:contain;display:block;margin:0 auto .5cqw}
+  #svPick button.on{border-color:#ffd04a;background:rgba(255,200,60,.22);box-shadow:0 0 8px rgba(255,200,60,.6)}
+  .ttl{display:inline-block;font-family:Jua;font-weight:400;font-size:2.7cqw;line-height:1;padding:.8cqw 1.6cqw;border-radius:99px;margin-right:1.4cqw;vertical-align:middle;white-space:nowrap}
+  .ttl.t1{color:#3a2200;background:linear-gradient(90deg,#ffe58a,#ffb830,#fff2b8,#ffb830);background-size:300% 100%;box-shadow:0 0 6px rgba(255,200,60,.8);animation:ttlS 2.4s linear infinite}
+  .ttl.t2{color:#1d2530;background:linear-gradient(90deg,#f4f7fb,#aab8c8);box-shadow:0 0 4px rgba(200,215,235,.6)}
+  .ttl.t3{color:#2a1406;background:linear-gradient(90deg,#f0b07a,#b8682e)}
+  @keyframes ttlS{to{background-position:-300% 0}}
   .rk-msg{font-family:Jua;font-size:3.8cqw;color:#d8c39a;padding:6cqw 0}
   .tin{font-family:Jua;font-size:max(16px,5cqw);text-align:center;padding:2.4cqw;border-radius:12px;border:2px solid #f2c86a;background:#120c08;color:#fff;margin-bottom:1.5cqw;user-select:text;-webkit-user-select:text}
   .terr{font-family:Jua;font-size:3.4cqw;color:#ff8a7a;min-height:5cqw}
@@ -256,7 +265,7 @@
     <div id="rbTier"></div><div id="rbList"></div>
     <div class="rbinfo">하루 3번 · 30초 동안 때린 피해가 이번 주 누적에 더해져요<br>다음 주에 순위 보상 (1위 💎50+10단계 돌 · 2~3위 💎30 · 4~10위 💎15 · 참여 💎5)<br>+ 모두가 깬 단계마다 💎2</div>
     <button id="rbGo" class="big">⚔ 도전하기</button></div></div>
-  <div class="modal" id="raidR"><div class="box"><div class="mh" id="rrT">레이드 종료!</div><p id="rrP">이번 도전 피해</p><div id="rrDmg"></div><p id="rrSub"></p><div id="rrList" class="list"></div><button id="rrOk" class="big">확인</button></div></div>
+  <div class="modal" id="raidR"><div class="box"><div class="mh" id="rrT">레이드 종료!</div><p id="rrP">이번 도전 피해</p><div id="rrDmg"></div><p id="rrSub"></p><div id="rrList" class="list"></div><button id="rrNext" class="big" style="display:none;margin-bottom:2cqw">▶ 다음 층</button><button id="rrOk" class="big">확인</button></div></div>
   <button id="bQ" class="idle">⚙ 효과 높음</button>
   <button id="bGrow" class="idle">🔮 환생 · 유물</button>
   <button id="bChat" class="idle">💬 채팅<i id="chatDot"></i></button>
@@ -269,6 +278,7 @@
   <div class="modal" id="survL"><div class="box"><div class="mh">🧛 서바이벌<button id="svX">✕</button></div>
     <p style="margin:2cqw 0">몰려오는 몬스터 떼 속에서 <b style="color:#ffd978">5분</b>을 버티세요!<br>레벨업할 때마다 무기와 능력을 골라 강해져요</p>
     <div class="rbline" id="svInfo" style="color:#cfe8ff"></div>
+    <div class="mysub">출전할 영웅을 골라주세요</div><div id="svPick"></div><div class="rbline" id="svPickD" style="color:#ffe9b0;min-height:5cqw"></div>
     <div class="rbinfo">하루 3번 · 버틴 시간만큼 골드 · 1분마다 각성석·💎 · 5분 완주 시 보너스 + 유물 기회</div>
     <div class="mysub">🏆 생존 순위</div><div id="svList2"></div>
     <button id="svGo" class="big">🧛 시작하기</button></div></div>
@@ -279,6 +289,7 @@
     <div class="mh" id="twFloor" style="font-size:9cqw;color:#fff"></div><img id="twImg" alt=""><div class="rbline" id="twName"></div><div class="rbline" id="twInfo" style="color:#cfe8ff"></div>
     <div class="rbinfo">30초 안에 보스를 쓰러뜨리면 다음 층 · 5층마다 💎2 + 조각 · 10층마다 유물 확정</div>
     <div class="mysub">🏆 탑 순위</div><div id="twList"></div>
+    <label id="twAutoL" style="display:flex;align-items:center;justify-content:center;gap:2cqw;font-family:Jua;font-size:3.8cqw;color:#ffe9b0;margin:2cqw 0 1cqw"><input type="checkbox" id="twAuto" style="width:5cqw;height:5cqw"> 🔁 이기면 자동으로 다음 층 도전</label>
     <button id="twGo" class="big">⚔ 도전</button></div></div>
   <div class="modal" id="rank"><div class="box"><div class="mh">🏆 사냥터 랭킹<button id="rankX">✕</button></div><div class="mysub" id="myRank"></div><div id="rankL"></div></div></div>
   <div class="modal" id="nick"><div class="box"><div class="mh">환영해요, 용사님!</div><p>랭킹에 표시될 이름을 정해주세요</p>
@@ -1469,6 +1480,26 @@ async function pushRank(){
   const body = { fields: { nick:{stringValue:nick}, best:{integerValue:String(bestStage)}, area:{stringValue:areaName(bestStage)}, power:{doubleValue:power()}, tower:{integerValue:String(tower.best)}, surv:{integerValue:String(survSave.best)}, survK:{integerValue:String(survSave.kills)}, reb:{integerValue:String(rb.count)}, updated:{integerValue:String(Date.now())} } };
   try { await getToken(); const r = await fbFetch(FB_DOC + '/h2d_players/' + pid + '?key=' + FB_KEY, { method:'PATCH', body: JSON.stringify(body) }); if (!r.ok) rankDirty = true; } catch(e){ rankDirty = true; }
 }
+const TITLES = {
+  hunt:  ['👑 사냥의 제왕', '⚔️ 전장의 정복자', '🛡️ 용맹한 개척자'],
+  raid:  ['🐲 보스 학살자', '🔥 레이드 영웅', '⚡ 보스 사냥꾼'],
+  tower: ['🗼 탑의 지배자', '☁️ 하늘 등반가', '🧗 탑의 도전자'],
+  surv:  ['🧛 불멸자', '💀 생존 전문가', '🩸 끈질긴 생존자'],
+};
+const ttl = (kind, i) => i < 3 ? '<i class="ttl t' + (i+1) + '">' + TITLES[kind][i] + '</i>' : '';
+const MEDAL = i => i < 3 ? ['🥇','🥈','🥉'][i] : i+1;
+let huntTop = {}, huntTopAt = 0;
+function setHuntTop(rows){ huntTop = {}; rows.slice(0,3).forEach((o,i) => huntTop[o.id] = i); huntTopAt = Date.now(); }
+async function refreshHuntTop(){
+  if (Date.now() - huntTopAt < 60000) return;
+  huntTopAt = Date.now();
+  try {
+    const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST',
+      body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_players'}], orderBy:[{field:{fieldPath:'best'}, direction:'DESCENDING'}], limit:10 } }) });
+    const arr = await r.json(); if (!r.ok) return;
+    setHuntTop(arr.filter(e => e.document).map(e => { const f = e.document.fields || {}; return { id: e.document.name.split('/').pop(), best: +(f.best?.integerValue || 0), power: +(f.power?.doubleValue ?? f.power?.integerValue ?? 0) }; }).sort((a,b) => b.best - a.best || b.power - a.power));
+  } catch(e){}
+}
 async function loadRank(){
   const list = document.getElementById('rankL'); list.innerHTML = '<div class="rk-msg">불러오는 중…</div>';
   try {
@@ -1478,14 +1509,15 @@ async function loadRank(){
     const rows = arr.filter(e => e.document).map(e => { const f = e.document.fields || {}, id = e.document.name.split('/').pop();
       return { id, nick: f.nick?.stringValue || '???', best: +(f.best?.integerValue || 0), power: +(f.power?.doubleValue ?? f.power?.integerValue ?? 0), reb: +(f.reb?.integerValue || 0), upd: +(f.updated?.integerValue || 0) }; })
       .sort((a,b) => b.best - a.best || b.power - a.power);
+    setHuntTop(rows);
     if (!rows.length){ list.innerHTML = '<div class="rk-msg">아직 기록이 없어요. 첫 번째 주인공이 되어보세요!</div>'; return; }
-    list.innerHTML = rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + (i < 3 ? ['🥇','🥈','🥉'][i] : i+1) + '</b><span>' + esc(o.nick) + (o.reb ? ' <small style="color:#c78bff">환생' + o.reb + '</small>' : '') + '</span><em>' + areaName(Math.max(1,o.best)) + '<small>전투력 ' + fmt(o.power) + '</small></em></div>').join('');
+    list.innerHTML = rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + MEDAL(i) + '</b><span>' + ttl('hunt', i) + esc(o.nick) + (o.reb ? ' <small style="color:#c78bff">환생' + o.reb + '</small>' : '') + '</span><em>' + areaName(Math.max(1,o.best)) + '<small>전투력 ' + fmt(o.power) + '</small></em></div>').join('');
   } catch(e){ list.innerHTML = '<div class="rk-msg">랭킹 서버에 연결하지 못했어요. 잠시 후 다시 열어주세요.<br><small style="opacity:.6">' + esc(lastNetErr || String(e.message || e)) + '</small></div>'; }
 }
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('bQ').onclick = () => { setQ(Q === 0 ? 2 : Q - 1, true); toast('화면 효과: ' + ['낮음 (가장 가벼움)','보통','높음'][Q]); };
 updQBtn();
-document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-5)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
+document.getElementById('bRank').onclick = () => { document.getElementById('myRank').textContent = (nick || '나') + ' · 최고 ' + areaName(bestStage) + ' · 전투력 ' + fmt(power()) + '  (버전 1123-6)'; document.getElementById('rank').classList.add('on'); if (rankDirty) pushRank().then(loadRank); else loadRank(); };
 document.getElementById('rankX').onclick = () => document.getElementById('rank').classList.remove('on');
 
 // ---- 쿠폰: 번호 자체는 코드에 없고, 변환한 값(SHA-256)만 비교 ----
@@ -1570,7 +1602,7 @@ async function openRaid(){
   try { const rows = await raidFetch(raidWeek()); R.rows = rows;
     const total = rows.reduce((a,o) => a + o.dmg, 0), tier = tierOf(total), next = RAID_TIERS[Math.min(tier, RAID_TIERS.length-1)];
     tierEl.innerHTML = '모두의 피해 <b>' + fmt(Math.round(total)) + '</b> · <b>' + tier + '</b> / 10단계 격파' + (tier < 10 ? '<div class="bar"><b style="width:' + Math.min(100, total/next*100) + '%"></b></div><small>다음 단계까지 ' + fmt(Math.round(next - total)) + '</small>' : '');
-    list.innerHTML = rows.length ? rows.slice(0, 30).map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + (i < 3 ? ['🥇','🥈','🥉'][i] : i+1) + '</b><span>' + esc(o.nick) + '</span><em>' + fmt(Math.round(o.dmg)) + '</em></div>').join('')
+    list.innerHTML = rows.length ? rows.slice(0, 30).map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + MEDAL(i) + '</b><span>' + ttl('raid', i) + esc(o.nick) + '</span><em>' + fmt(Math.round(o.dmg)) + '</em></div>').join('')
                             : '<div class="rk-msg">아직 아무도 도전하지 않았어요. 첫 번째로 때려보세요!</div>';
   } catch(e){ tierEl.textContent = ''; list.innerHTML = '<div class="rk-msg">레이드 서버에 연결하지 못했어요.<br>도전은 할 수 있고, 기록은 연결되면 올라가요.<br><small style="opacity:.6">' + esc(lastNetErr) + '</small></div>'; }
 }
@@ -1638,7 +1670,7 @@ function endRaid(){
   document.getElementById('rrList').innerHTML = '<div>💰 골드 +' + fmt(g) + '</div><div>◆ ' + TYPES[pt].who + ' 조각 +' + pc + '</div><div>💎 희망코인 +1</div><div>🔷 각성석 +2</div>';
   document.getElementById('raidR').classList.add('on');
 }
-document.getElementById('rrOk').onclick = () => { document.getElementById('raidR').classList.remove('on'); const k = R.kind; R.on = false; FXS.raid.fx.length = FXS.raid.nums.length = 0; useScene('idle'); setView('idle'); if (k === 'tower') openTower(); else openRaid(); };
+document.getElementById('rrOk').onclick = () => { clearInterval(twTimer); twTimer = null; document.getElementById('rrNext').style.display = 'none'; document.getElementById('rrOk').textContent = '확인'; document.getElementById('raidR').classList.remove('on'); const k = R.kind; R.on = false; FXS.raid.fx.length = FXS.raid.nums.length = 0; useScene('idle'); setView('idle'); if (k === 'tower') openTower(); else openRaid(); };
 document.getElementById('rQuit').onclick = () => { if (R.on && !R.over){ R.t = 0; endRaid(); } };
 function raidRender(dt){
   const sc = cv.width/W; cx.setTransform(sc,0,0,sc,0,0);
@@ -1761,17 +1793,26 @@ async function openTower(){
   document.getElementById('twName').textContent = BOSS_NAMES[towerBoss(f)] + ' · 체력 ' + fmt(towerHp(f));
   document.getElementById('twInfo').textContent = '최고 ' + tower.best + '층 · 오늘 남은 도전 ' + tower.left + ' / ' + TOWER_TRIES + ' (이기면 횟수 안 줄어요)';
   const go = document.getElementById('twGo'); go.disabled = tower.left <= 0; go.textContent = tower.left > 0 ? '⚔ ' + f + '층 도전 (30초)' : '내일 다시 도전할 수 있어요';
+  document.getElementById('twAuto').checked = !!tower.auto;
   document.getElementById('towerL').classList.add('on');
   const list = document.getElementById('twList'); list.innerHTML = '<div class="rk-msg">불러오는 중…</div>';
   try {
     const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_players'}], orderBy:[{field:{fieldPath:'tower'}, direction:'DESCENDING'}], limit:30 } }) });
     const arr = await r.json(); if (!r.ok) throw new Error();
     const rows = arr.filter(e => e.document).map(e => ({ id: e.document.name.split('/').pop(), nick: e.document.fields.nick?.stringValue || '???', tw: +(e.document.fields.tower?.integerValue || 0) })).filter(o => o.tw > 0);
-    list.innerHTML = rows.length ? rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + (i < 3 ? ['🥇','🥈','🥉'][i] : i+1) + '</b><span>' + esc(o.nick) + '</span><em>' + o.tw + '층</em></div>').join('') : '<div class="rk-msg">아직 기록이 없어요. 첫 정복자가 되어보세요!</div>';
+    list.innerHTML = rows.length ? rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + MEDAL(i) + '</b><span>' + ttl('tower', i) + esc(o.nick) + '</span><em>' + o.tw + '층</em></div>').join('') : '<div class="rk-msg">아직 기록이 없어요. 첫 정복자가 되어보세요!</div>';
   } catch(e){ list.innerHTML = '<div class="rk-msg">탑 순위를 불러오지 못했어요</div>'; }
 }
 document.getElementById('bTower').onclick = openTower;
 document.getElementById('twX').onclick = () => document.getElementById('towerL').classList.remove('on');
+document.getElementById('twAuto').onchange = e => { tower.auto = e.target.checked; saveGame(); };
+let twTimer = null;
+function towerNext(){
+  clearInterval(twTimer); twTimer = null; document.getElementById('rrNext').style.display = 'none';
+  towerFix(); if (tower.left <= 0) return; tower.left--;
+  document.getElementById('raidR').classList.remove('on'); R.on = false; startRaid('tower');
+}
+document.getElementById('rrNext').onclick = towerNext;
 document.getElementById('twGo').onclick = () => { towerFix(); if (tower.left <= 0) return; tower.left--; document.getElementById('towerL').classList.remove('on'); startRaid('tower'); };
 function endTower(win){
   R.over = true; R.shots.length = 0; const f = R.floor; let list = '';
@@ -1787,6 +1828,13 @@ function endTower(win){
   document.getElementById('rrDmg').textContent = fmt(Math.round(R.total));
   document.getElementById('rrSub').textContent = '최고 ' + tower.best + '층 · 오늘 남은 도전 ' + tower.left + '번';
   document.getElementById('rrList').innerHTML = list || '<div style="opacity:.7">더 강해져서 다시 도전하세요!</div>';
+  const nx = document.getElementById('rrNext'); clearInterval(twTimer); twTimer = null;
+  if (win && tower.left > 0){
+    nx.style.display = '';
+    if (tower.auto){ let c = 3; nx.textContent = '▶ ' + (f+1) + '층 자동 도전 ' + c + '초'; document.getElementById('rrOk').textContent = '자동 멈추기';
+      twTimer = setInterval(() => { c--; if (c <= 0) towerNext(); else nx.textContent = '▶ ' + (f+1) + '층 자동 도전 ' + c + '초'; }, 1000); }
+    else nx.textContent = '▶ ' + (f+1) + '층 바로 도전';
+  } else nx.style.display = 'none';
   document.getElementById('raidR').classList.add('on');
 }
 
@@ -1875,6 +1923,7 @@ function tryAwaken(t){
 // ======================= 채팅 =======================
 let chatOpen = false, chatLast = 0, chatSeen = 0, chatSendT = 0;
 async function loadChat(){
+  refreshHuntTop();
   try {
     const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_chat'}], orderBy:[{field:{fieldPath:'ts'}, direction:'DESCENDING'}], limit:50 } }) });
     const arr = await r.json(); if (!r.ok) throw new Error(lastNetErr);
@@ -1884,7 +1933,7 @@ async function loadChat(){
     if (!chatOpen) return;
     chatSeen = chatLast; try { localStorage.setItem('h2d_chatSeen', String(chatSeen)); } catch(e){}
     const list = document.getElementById('chatL'), atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 30;
-    list.innerHTML = rows.length ? rows.map(o => '<div class="cm' + (o.uid === pid ? ' me' : '') + '"><b>' + esc(o.nick) + '<small>' + (o.best ? areaLabel(o.best) : '') + ' · ' + new Date(o.ts).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Seoul'}) + '</small></b><span>' + esc(o.text) + '</span></div>').join('')
+    list.innerHTML = rows.length ? rows.map(o => '<div class="cm' + (o.uid === pid ? ' me' : '') + '"><b>' + (o.uid in huntTop ? ttl('hunt', huntTop[o.uid]) : '') + esc(o.nick) + '<small>' + (o.best ? areaLabel(o.best) : '') + ' · ' + new Date(o.ts).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Seoul'}) + '</small></b><span>' + esc(o.text) + '</span></div>').join('')
       : '<div class="rk-msg">첫 인사를 남겨보세요!</div>';
     if (atBottom || list.dataset.first !== '1'){ list.scrollTop = list.scrollHeight; list.dataset.first = '1'; }
   } catch(e){ if (chatOpen) document.getElementById('chatL').innerHTML = '<div class="rk-msg">채팅 서버에 연결하지 못했어요<br><small style="opacity:.6">' + esc(lastNetErr) + '</small></div>'; }
@@ -1941,15 +1990,26 @@ const SV_PAS = {
   regen:{ name:'재생',       em:'🌿', desc: l => '초당 체력 ' + l + '% 회복' },
 };
 const S = { on:false };
+const SV_PERK = { stone:'hp', sword:'move', orb:'atk', arrow:'mag', egg:'regen' };
+const svOwned = () => Object.keys(TYPES).filter(t => own[t] && own[t].have);
+function svPickRender(){
+  const list = svOwned(); if (!list.includes(survSave.hero)) survSave.hero = list.includes(equipped[0]) ? equipped[0] : list[0] || 'stone';
+  const el = document.getElementById('svPick');
+  el.innerHTML = list.map(t => '<button data-t="' + t + '"' + (t === survSave.hero ? ' class="on"' : '') + '><img src="../proto2d/img/' + heroKey(t, own[t].star) + '.png">' + TYPES[t].who + '<br><span style="color:#ffd04a">' + '★'.repeat(Math.min(5, own[t].star)) + (own[t].star > 5 ? '+' + (own[t].star-5) : '') + '</span></button>').join('');
+  el.querySelectorAll('button').forEach(b => b.onclick = () => { survSave.hero = b.dataset.t; saveGame(); svPickRender(); });
+  const t = survSave.hero, w = SV_WEP[heroItem(t) === 'shield' ? 'shield' : heroItem(t)], P = SV_PAS[SV_PERK[t]];
+  document.getElementById('svPickD').textContent = '시작 무기: ' + w.name + (own[t].star >= 5 ? ' Lv.2' : '') + ' · 시작 능력: ' + P.em + ' ' + P.name;
+}
 const svBaseDmg = () => { let b = 0; for (const t of ['stone','shield','orb','sword','arrow','egg']){ const lv = bestOf(t); if (lv) b = Math.max(b, dmgOf(t, lv)); } return Math.max(22, b) * atkMul(up.atk); };
 const svEnemyHp0 = () => mobHp() * 0 + Math.max(15, svBaseDmg() * 0.8);
 function startSurv(){
   survFix(); if (survSave.left <= 0) return; survSave.left--; saveGame();
-  const main = equipped[0] || 'stone', it = heroItem(main);
+  const owned = svOwned(), main = owned.includes(survSave.hero) ? survSave.hero : (equipped[0] || 'stone'), it = heroItem(main), perk = SV_PERK[main] || 'hp';
   Object.assign(S, { on:true, over:false, paused:false, t:0, kills:0, lv:1, xp:0, need:3, spawnT:1.5, bossNext:60,
     hero:{ x:0, y:0, hp:100, max:100, face:1, kick:0, hurt:0 }, hk: heroKey(main, own[main].star),
-    mobs:[], gems:[], shots:[], weps:{ [it === 'shield' ? 'shield' : it]: 1 }, wt:{}, pas:{ atk:0, cd:0, move:0, hp:0, mag:0, regen:0 },
+    mobs:[], gems:[], shots:[], weps:{ [it === 'shield' ? 'shield' : it]: own[main].star >= 5 ? 2 : 1 }, wt:{}, pas:{ atk:0, cd:0, move:0, hp:0, mag:0, regen:0, [perk]:1 },
     base: svBaseDmg(), hp0: svEnemyHp0(), joy:null, area: areaIdx(Math.max(1, bestStage)) });
+  if (perk === 'hp'){ S.hero.max = S.hero.hp = 125; }
   needArea(S.area);
   FXS.surv.fx.length = FXS.surv.nums.length = 0; useScene('surv'); setView('surv');
   document.getElementById('survL').classList.remove('on');
@@ -2131,13 +2191,14 @@ async function openSurv(){
   survFix();
   document.getElementById('svInfo').textContent = '최고 ' + Math.floor(survSave.best/60) + '분 ' + (survSave.best%60) + '초 (처치 ' + survSave.kills + ') · 오늘 남은 도전 ' + survSave.left + ' / ' + SV_TRIES;
   const go = document.getElementById('svGo'); go.disabled = survSave.left <= 0; go.textContent = survSave.left > 0 ? '🧛 시작하기' : '내일 다시 도전할 수 있어요';
+  svPickRender();
   document.getElementById('survL').classList.add('on');
   const list = document.getElementById('svList2'); list.innerHTML = '<div class="rk-msg">불러오는 중…</div>';
   try {
     const r = await fbFetch(FB_DOC + ':runQuery?key=' + FB_KEY, { method:'POST', body: JSON.stringify({ structuredQuery: { from:[{collectionId:'h2d_players'}], orderBy:[{field:{fieldPath:'surv'}, direction:'DESCENDING'}], limit:30 } }) });
     const arr = await r.json(); if (!r.ok) throw new Error();
     const rows = arr.filter(e => e.document).map(e => ({ id: e.document.name.split('/').pop(), nick: e.document.fields.nick?.stringValue || '???', s: +(e.document.fields.surv?.integerValue || 0), k: +(e.document.fields.survK?.integerValue || 0) })).filter(o => o.s > 0);
-    list.innerHTML = rows.length ? rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + (i < 3 ? ['🥇','🥈','🥉'][i] : i+1) + '</b><span>' + esc(o.nick) + '</span><em>' + Math.floor(o.s/60) + '분 ' + (o.s%60) + '초<small>처치 ' + o.k + '</small></em></div>').join('') : '<div class="rk-msg">아직 기록이 없어요. 첫 생존자가 되어보세요!</div>';
+    list.innerHTML = rows.length ? rows.map((o,i) => '<div class="rk' + (o.id === pid ? ' me' : '') + '"><b>' + MEDAL(i) + '</b><span>' + ttl('surv', i) + esc(o.nick) + '</span><em>' + Math.floor(o.s/60) + '분 ' + (o.s%60) + '초<small>처치 ' + o.k + '</small></em></div>').join('') : '<div class="rk-msg">아직 기록이 없어요. 첫 생존자가 되어보세요!</div>';
   } catch(e){ list.innerHTML = '<div class="rk-msg">순위를 불러오지 못했어요</div>'; }
 }
 document.getElementById('bSurv').onclick = openSurv;
