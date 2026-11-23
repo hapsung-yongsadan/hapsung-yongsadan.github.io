@@ -169,17 +169,19 @@
   #bMeter.on{background:linear-gradient(180deg,#e8a830,#8a5a04)}
   body.raid #bMeter, body.surv #bMeter, body.arena #bMeter, body.raid #meter, body.surv #meter, body.arena #meter{display:none!important}
   body.def #bMeter{top:auto;bottom:24.5%}
-  #meter{position:absolute;left:3%;top:35.4%;width:54%;z-index:7;display:none;padding:1.6cqw 2cqw;border-radius:12px;background:rgba(10,6,2,.78);border:1.5px solid rgba(255,215,120,.45);pointer-events:auto}
+  #meter{position:absolute;left:2%;top:35.4%;width:38%;z-index:7;display:none;padding:1.6cqw 2cqw;border-radius:12px;background:rgba(10,6,2,.78);border:1.5px solid rgba(255,215,120,.45);pointer-events:auto}
   body.def #meter{top:auto;bottom:29%}
   #meter.on{display:block}
-  .mth{display:flex;justify-content:space-between;align-items:center;font-family:Jua;font-size:3.1cqw;color:#ffe9b0;margin-bottom:1cqw}
+  .mth{display:flex;justify-content:space-between;align-items:center;font-family:Jua;font-size:2.8cqw;color:#ffe9b0;margin-bottom:1cqw}
   .mth b{font-weight:400}
   .mth button{font-family:Jua;font-size:2.6cqw;color:#e9dcc0;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:.4cqw 1.6cqw}
-  .mtr{display:flex;align-items:center;gap:1.4cqw;margin:.5cqw 0;font-family:Jua;font-size:2.7cqw;color:#f2dca8}
+  .mtr{display:flex;align-items:center;gap:1.2cqw;margin:.5cqw 0;font-family:Jua;font-size:2.5cqw;color:#f2dca8}
   .mtr img{width:5.4cqw;height:5.4cqw;object-fit:contain;border-radius:50%;background:rgba(255,255,255,.08)}
   .mtr .mb{flex:1;min-width:0}
   .mtr .mb i{display:block;height:1.2cqw;border-radius:99px;margin-top:.3cqw;background:linear-gradient(90deg,#ffb030,#ffe27a)}
-  .mtr .mb span{display:flex;justify-content:space-between;white-space:nowrap}
+  .mtr .mb span{display:flex;justify-content:space-between;white-space:nowrap;gap:1cqw}
+  .mtr .mb span b:first-child{overflow:hidden;text-overflow:ellipsis}
+  .mtr .mb small{display:block;line-height:1.1}
   .mtr .mb small{color:#a8987a;font-size:2.4cqw}
   .mtsum{font-family:Jua;font-size:2.6cqw;color:#cdb98f;text-align:right;margin-top:.6cqw;border-top:1px solid rgba(255,215,120,.2);padding-top:.6cqw}
   #meB{overflow-y:auto;max-height:68cqh;touch-action:pan-y;text-align:left}
@@ -1936,10 +1938,10 @@ function renderMeter(){
   const k = mtKey(), M = MT[k], now = Math.floor(Date.now()/1000), recent = {};
   for (const s in M.sec){ if (+s < now - 10){ delete M.sec[s]; continue; } if (+s >= now) continue; for (const h in M.sec[s]) recent[h] = (recent[h]||0) + M.sec[s][h]; }
   const keys = Object.keys(M.tot).sort((a,b) => M.tot[b] - M.tot[a]), sum = keys.reduce((a,h) => a + M.tot[h], 0), mx = Math.max(1, ...keys.map(h => M.tot[h])), el = (Date.now() - M.t0)/1000;
-  document.getElementById('mtT').textContent = '📊 ' + (k === 'def' ? '성벽 방어전' : '사냥터') + ' 딜량';
-  document.getElementById('mtL').innerHTML = keys.length ? keys.map(h => { const t = TYPES[h];
-      return '<div class="mtr">' + (t ? '<img src="../proto2d/img/' + heroKey(h, own[h].star) + '.png">' : '<img>') + '<div class="mb"><span><b style="font-weight:400">' + (t ? t.who : '기타') + '</b><b style="font-weight:400;color:#ffe27a">' + fmt(Math.round(M.tot[h])) + ' · ' + Math.round(M.tot[h]/Math.max(1,sum)*100) + '%</b></span><i style="width:' + (M.tot[h]/mx*100) + '%"></i></div></div>'; }).join('')
-      + '<div class="mtsum">합계 ' + fmt(Math.round(sum)) + ' · 초당 ' + fmt(Math.round(Object.values(recent).reduce((a,v) => a+v, 0)/10)) + ' · ' + Math.floor(el/60) + '분 ' + Math.floor(el%60) + '초째</div>'
+  document.getElementById('mtT').textContent = '📊 ' + (k === 'def' ? '방어전' : '사냥터') + ' 딜량';
+  document.getElementById('mtL').innerHTML = keys.length ? keys.slice(0, k === 'def' ? 5 : 3).map(h => { const t = TYPES[h];
+      return '<div class="mtr">' + (t ? '<img src="../proto2d/img/' + heroKey(h, own[h].star) + '.png">' : '<img>') + '<div class="mb"><span><b style="font-weight:400">' + (t ? t.who : '기타') + '</b><b style="font-weight:400;color:#ffe27a">' + Math.round(M.tot[h]/Math.max(1,sum)*100) + '%</b></span><i style="width:' + (M.tot[h]/mx*100) + '%"></i><small>' + fmt(Math.round(M.tot[h])) + '</small></div></div>'; }).join('')
+      + '<div class="mtsum">합계 ' + fmt(Math.round(sum)) + '<br>초당 ' + fmt(Math.round(Object.values(recent).reduce((a,v) => a+v, 0)/10)) + ' · ' + Math.floor(el/60) + '분 ' + Math.floor(el%60) + '초</div>'
     : '<div style="font-size:2.7cqw;color:#a8987a;padding:1cqw 0">아직 공격 기록이 없어요</div>';
 }
 document.getElementById('bMeter').onclick = () => { mtOn = !mtOn; lsSet('h2d_meter', mtOn ? '1' : '0'); renderMeter(); };
