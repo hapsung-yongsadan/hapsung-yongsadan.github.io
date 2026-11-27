@@ -5,6 +5,7 @@
 ## 폴더
 - `index.html` + `Build/`: Unity WebGL 빌드(약 44MB). 원본 Unity 프로젝트는 그니님 맥북에 있고, 여기 파일은 빌드 결과물이라 직접 고치지 않는다.
 - `hapsung2d/`: 현재 주력인 2D 웹 버전. `index.html` 한 파일(약 2,700줄)에 게임 전체, `admin.html`은 관리자 페이지.
+- `lumiere/`: 새 게임 "루미에르 온라인" (다크 판타지 액션 RPG · 디아블로식 장비·미확인 감정 · 신수 키우기). `index.html` 한 파일 + `assets/`(CC0 도트 그림 아틀라스: 0x72 DungeonTileset II, Pixel-boy 아이템). 저장은 아직 기기(localStorage `lumi_save_v2`)만.
 - `bunker/`, `proto2d/`, `pyochang/`, `rpgtest/`: 화면·기능 시안. 따로 말하지 않으면 건드리지 않는다.
 - `ref/`: 참고 이미지.
 
