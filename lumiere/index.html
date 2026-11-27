@@ -37,6 +37,12 @@
   #xpB b{position:absolute;inset:0;font-weight:400;font-size:1.9cqw;line-height:2cqw;text-align:center;text-shadow:0 1px 0 #000}
   #goldB{font-size:3cqw;color:#ffd060;margin-top:.8cqw;text-shadow:0 2px 0 #000}
   #goldB span{color:#c8b8ff;margin-left:2cqw}
+  #qTrack{position:absolute;left:2.4cqw;top:21cqw;max-width:66cqw;z-index:6;text-align:left;font-size:2.9cqw;line-height:1.35;padding:1.4cqw 2.4cqw;border-radius:4px;background:rgba(10,6,4,.72);border:1.5px solid #6a5232;box-shadow:0 0 0 1px #000;color:#e8d8b8;display:none}
+  #qTrack.on{display:block}
+  #qTrack b{font-weight:400;color:#ffd88a}
+  #qTrack i{font-style:normal;color:#9aff7a;margin-left:1.4cqw}
+  #qTrack.done{border-color:#7aff7a;animation:qpulse 1s ease-in-out infinite alternate}
+  @keyframes qpulse{to{box-shadow:0 0 0 1px #000,0 0 12px rgba(120,255,120,.6)}}
   #mini{position:absolute;right:2.4cqw;top:2.4cqw;width:25cqw;height:25cqw;border:2px solid #6a5232;border-radius:6px;background:#000c;z-index:5;pointer-events:none;box-shadow:0 0 0 2px #000}
   #mapN{position:absolute;right:2.4cqw;top:28cqw;width:25cqw;text-align:center;font-size:2.7cqw;color:#e8d2a8;z-index:5;pointer-events:none;text-shadow:0 1px 0 #000}
   #side{position:absolute;right:2.4cqw;top:33cqw;display:flex;flex-direction:column;gap:1.6cqw;z-index:6}
@@ -191,6 +197,7 @@
     <div id="face"><canvas id="faceC" width="16" height="16"></canvas><span id="lvB">Lv.1</span></div>
     <div id="who"><div id="nm">모험가<small id="clsN"></small></div><div id="xpB"><i></i><b></b></div><div id="goldB">💰 0</div></div>
   </div>
+  <button id="qTrack"></button>
   <canvas id="mini" width="240" height="240"></canvas>
   <div id="mapN"></div>
   <div id="side">
@@ -229,7 +236,7 @@
     <input id="nick" maxlength="8" placeholder="모험가 이름 (2~8글자)" autocomplete="off">
     <button id="startB">어둠 속으로</button>
     <button id="contB" class="hide">이어하기</button>
-    <div id="ver">1단계 시험판 · 1127-2 · 그림: 0x72, Pixel-boy (CC0)</div>
+    <div id="ver">1단계 시험판 · 1127-3 · 그림: 0x72, Pixel-boy (CC0)</div>
   </div>
 </div></div>
 
@@ -383,20 +390,20 @@ const CLASSES = {
   knight: { name:'기사', spr:{m:'knight_m', f:'knight_f'}, main:'str', range:100, aspd:0.85, melee:true,
     desc:'묵직한 검과 갑옷<br>앞에서 버티는 전사', base:{str:6, dex:3, int:1, vit:6, luk:2},
     titles:['견습 기사','성전 기사','심연의 파수꾼','빛의 성기사'],
-    skills:[ {id:'bash',  em:'💥', n:'강타',     lv:1,  mp:8,  cd:4,  d:'적 하나에게 공격력 280% 일격'},
-             {id:'whirl', em:'🌀', n:'회오리 베기', lv:5, mp:16, cd:8, d:'주변 모든 적에게 공격력 180%'},
+    skills:[ {id:'whirl', em:'🌀', n:'회오리 베기', lv:1, mp:10, cd:3.5, d:'주변 모든 적에게 공격력 190%'},
+             {id:'quake', em:'💥', n:'대지 강타', lv:4, mp:18, cd:7, d:'앞쪽 넓은 범위에 공격력 300% + 2초 기절'},
              {id:'guard', em:'🛡', n:'수호의 맹세', lv:10, mp:20, cd:22, d:'8초간 받는 피해 -50%, 체력 15% 회복'} ] },
   wizard: { name:'마법사', spr:{m:'wizzard_m', f:'wizzard_f'}, main:'int', range:330, aspd:1.1,
     desc:'멀리서 원소 마법을<br>쏟아붓는 학자', base:{str:1, dex:3, int:7, vit:4, luk:3},
     titles:['마법 견습생','원소술사','대마법사','빛의 현자'],
     skills:[ {id:'fire',  em:'🔥', n:'화염구',   lv:1,  mp:10, cd:3.5, d:'폭발하는 화염구 · 범위 공격력 230%'},
-             {id:'frost', em:'❄', n:'얼음 폭풍', lv:5,  mp:22, cd:9, d:'대상 주변 공격력 170% + 3초 둔화'},
-             {id:'bolt',  em:'⚡', n:'연쇄 번개', lv:10, mp:28, cd:11, d:'적 5마리에게 튕기는 번개 공격력 210%'} ] },
+             {id:'frost', em:'❄', n:'얼음 폭풍', lv:3,  mp:20, cd:7, d:'넓은 범위 공격력 190% + 3초 둔화'},
+             {id:'bolt',  em:'⚡', n:'연쇄 번개', lv:7, mp:24, cd:9, d:'적 8마리에게 튕기는 번개 공격력 220%'} ] },
   ranger: { name:'레인저', spr:{m:'elf_m', f:'elf_f'}, main:'dex', range:360, aspd:0.68,
     desc:'엘프 명사수<br>치명타와 기동력', base:{str:3, dex:7, int:1, vit:4, luk:3},
     titles:['숲의 사냥꾼','그림자 사수','바람의 명궁','빛의 화살'],
-    skills:[ {id:'multi',  em:'🎯', n:'연사',     lv:1,  mp:9,  cd:4, d:'화살 5발 연사 · 발당 공격력 95%'},
-             {id:'pierce', em:'➶', n:'관통 사격', lv:5,  mp:18, cd:7, d:'일직선의 모든 적을 꿰뚫는 공격력 260%'},
+    skills:[ {id:'multi',  em:'🎯', n:'부채꼴 사격', lv:1, mp:9, cd:3.5, d:'주변 적 7마리에게 화살 · 발당 공격력 120%'},
+             {id:'pierce', em:'➶', n:'화살비', lv:4,  mp:18, cd:7, d:'대상 지역에 화살비 · 범위 공격력 260%'},
              {id:'dash',   em:'💨', n:'바람 걸음', lv:10, mp:15, cd:18, d:'6초간 이동 속도 +60%, 회피 +40%'} ] },
 };
 const STATS = { str:{n:'힘', d:'기사·레인저 공격력'}, dex:{n:'민첩', d:'공격 속도 · 치명타 · 회피'}, int:{n:'지능', d:'마법사 공격력 · 최대 마나'}, vit:{n:'체력', d:'최대 체력 · 방어력'}, luk:{n:'행운', d:'치명타 피해 · 아이템 발견'} };
@@ -613,18 +620,27 @@ function finishMap(R){
 // =================== 몬스터 ===================
 function mobStats(lv, boss){
   const hp = Math.round((38 + lv * lv * 3.8 + lv * 16) * (boss ? 16 : 1));
-  return { lv, hp, max:hp, atk: Math.round((6 + lv * 3.6) * (boss ? 2.2 : 1)), def: Math.round(lv * 0.9 * (boss ? 1.5 : 1)), xp: Math.round((9 + lv * 4.6) * (boss ? 25 : 1)), gold: Math.round((3 + lv * 2.2) * (boss ? 30 : 1)) };
+  return { lv, hp, max:hp, atk: Math.round((4 + lv * 2.6) * (boss ? 2.6 : 1)), def: Math.round(lv * 0.9 * (boss ? 1.5 : 1)), xp: Math.round((9 + lv * 4.6) * (boss ? 25 : 1)), gold: Math.round((3 + lv * 2.2) * (boss ? 30 : 1)) };
 }
 function spawnMob(boss, elite){
   if (MAP.town) return; const Z = MAP.zone; let f, tries = 0;
-  do { f = MAP.floors[Math.floor(Math.random() * MAP.floors.length)]; tries++; } while (tries < 40 && (Math.hypot((f[0]+0.5)*TS - P.x, (f[1]+0.5)*TS - P.y) < 600 || Math.hypot((f[0]+0.5)*TS - MAP.start.x, (f[1]+0.5)*TS - MAP.start.y) < 500));
+  const pool = boss ? (MAP.open2 || (MAP.open2 = MAP.floors.filter(q => q[0] > 2 && q[1] > 2 && q[0] < MAP.w - 3 && q[1] < MAP.h - 3 && openCell(q[0], q[1], 2)))) : MAP.floors;
+  const src = pool.length ? pool : MAP.floors;
+  do { f = src[Math.floor(Math.random() * src.length)]; tries++; } while (tries < 60 && (Math.hypot((f[0]+0.5)*TS - P.x, (f[1]+0.5)*TS - P.y) < (boss ? 700 : 650) || Math.hypot((f[0]+0.5)*TS - MAP.start.x, (f[1]+0.5)*TS - MAP.start.y) < 500));
   const x = (f[0]+0.5)*TS, y = (f[1]+0.7)*TS;
   if (boss){ const B = Z.boss; mobs.push({ ...mobStats(B.lv, true), boss:true, n:B.n, k:B.k, x, y, hx:x, hy:y, r:70, s:5.5, st:'idle', t:0, acd:2, slam:6, face:1, hit:0, slow:0 });
     MAP.bossUp = true; banner('💀 ' + B.n, '보스가 깨어났어요 · 지도의 💀 표시'); sfx('boom'); shake = 12; return; }
-  const M = pick(Z.mobs), lv = clamp(ri(Z.lv[0], Z.lv[1] - 1) + (elite ? 2 : 0), 1, 99), s = mobStats(lv, false);
-  if (elite){ s.hp *= 4; s.max = s.hp; s.atk = Math.round(s.atk * 1.5); s.xp *= 4; s.gold *= 4; }
-  mobs.push({ ...s, n:(elite ? '정예 ' : '') + M.n, k:M.k, ranged:!!M.ranged, fast:!!M.fast, elite:!!elite, x, y, hx:x, hy:y, r:28, s: elite ? 5 : 4, st:'idle', t:rnd(0, 2), acd:1, face:1, hit:0, slow:0, tall:!!M.tall });
+  // 무리 지어 등장 (주변 바닥 칸에 4~7마리)
+  const pack = ri(4, 7), gid = Math.random(), cells = MAP.floors.filter(q => Math.abs(q[0] - f[0]) <= 2 && Math.abs(q[1] - f[1]) <= 2);
+  for (let k = 0; k < pack; k++){ const c = cells[Math.floor(Math.random() * cells.length)] || f, el = elite && k === 0;
+    const lo = clamp(P.lv - 1, Z.lv[0], Z.lv[1] - 1), hi = clamp(P.lv + 1, Z.lv[0], Z.lv[1]), M = pick(Z.mobs), lv = clamp(ri(lo, hi) + (el ? 1 : 0), 1, 99), st = mobStats(lv, false);
+    if (el){ st.hp *= 4; st.max = st.hp; st.atk = Math.round(st.atk * 1.5); st.xp *= 4; st.gold *= 4; }
+    const mx2 = (c[0] + rnd(0.3, 0.7))*TS, my2 = (c[1] + rnd(0.4, 0.8))*TS;
+    mobs.push({ ...st, n:(el ? '정예 ' : '') + M.n, k:M.k, ranged:!!M.ranged, fast:!!M.fast, elite:el, gid, x:mx2, y:my2, hx:mx2, hy:my2, r:28, s: el ? 5 : 4, st:'idle', t:rnd(0, 2), acd:1, face:1, hit:0, slow:0, tall:!!M.tall }); }
 }
+const MOB_CAP = 46;
+// 보스는 넓은 곳에서만 (벽에 끼지 않게)
+function openCell(c, r, rad){ for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) if (MAP.g[(r+dy)*MAP.w + c+dx] !== 1) return false; return true; }
 
 // =================== 능력치 ===================
 function sumAff(){ const S = {}; for (const s of SLOTS){ const it = P.eq[s]; if (!it || it.unid) continue; for (const a of it.aff) S[a.k] = (S[a.k] || 0) + a.v; } return S; }
@@ -676,7 +692,7 @@ const pet = { x:0, y:0, cd:1, face:1, t:0 };
 // =================== 맵 들어가기 ===================
 function enterTown(){ buildTown(); P.where = 'town'; placeAt(MAP.start); banner('루미에르 성채', '마지막 빛이 남은 곳 · 분수 근처에서 빠르게 회복돼요'); afterEnter(); }
 function enterZone(i){ const Z = ZONES[i]; buildDungeon(Z); P.where = i; P.lastHunt = i; placeAt({ x:MAP.start.x, y:MAP.start.y + TS }); MAP.bossT = 150; MAP.bossUp = false;
-  for (let k = 0; k < 22; k++) spawnMob(false, Math.random() < 0.06); banner(Z.name, '권장 레벨 ' + Z.lv[0] + '~' + Z.lv[1]); afterEnter(); }
+  for (let k = 0; k < 8; k++) spawnMob(false, Math.random() < 0.35); banner(Z.name, '권장 레벨 ' + Z.lv[0] + '~' + Z.lv[1]); afterEnter(); }
 function placeAt(p){ P.x = p.x; P.y = p.y; cam.x = P.x - W/2; cam.y = P.y - H*0.52; pet.x = P.x - 60; pet.y = P.y; }
 function afterEnter(){ mobs = mobs.filter(() => !MAP.town); if (MAP.town) mobs = []; shots = []; fx = []; nums = []; drops = []; P.target = null; tapMove = null; holdMove = null;
   $('mapN').textContent = MAP.town ? '루미에르 성채' : MAP.zone.name; save(); }
@@ -700,6 +716,7 @@ function killMob(m){
   const gap = P.lv - m.lv, xm = (gap > 6 ? 0.2 : gap > 3 ? 0.6 : gap < -3 ? 1.3 : 1) * (1 + ST.xp/100);
   gainXp(Math.round(m.xp * xm)); petGain(Math.round(m.xp * 0.35));
   if (ST.lok) P.hp = Math.min(ST.maxHp, P.hp + ST.lok);
+  P.mp = Math.min(ST.maxMp, P.mp + ST.maxMp * 0.03);
   if (ST.L.nova){ addFx({ k:'ring', x:m.x, y:m.y - 20, r0:20, r1:180, life:0.3, c:'255,120,60' }); for (const o of mobs) if (!o.dead && o !== m && Math.hypot(o.x - m.x, o.y - m.y) < 180) hitMob(o, 1.3, { noElem:true }); }
   if (ST.L.frenzy) { P.frenzy = Math.min(5, (P.frenzy || 0) + 1); P.frenzyT = 4; }
   P.kills = (P.kills || 0) + 1; questKill(m);
@@ -713,7 +730,7 @@ function killMob(m){
   if (Math.random() < (m.boss ? 1 : 0.02)) dropMisc(m.x, m.y, 'scroll');
   if (P.pet && P.pet.hatched && Math.random() < 0.03) dropMisc(m.x, m.y, 'food');
   if (m.boss){ MAP.bossUp = false; MAP.bossT = 180; P.bossKills = P.bossKills || {}; P.bossKills[MAP.zone.id] = (P.bossKills[MAP.zone.id] || 0) + 1; banner('🏆 ' + m.n + ' 처치!', '전리품을 확인하세요'); questBoss(MAP.zone.id); flashScreen('rgba(255,200,120,.45)'); }
-  else setTimeout(() => { if (!MAP.town && P.where !== 'town' && mobs.filter(o => !o.dead && !o.boss).length < 22) spawnMob(false, Math.random() < 0.06); }, 3000 + Math.random() * 4000);
+  else if (!MAP.packT) MAP.packT = 4;
   if (P.target === m) P.target = null;
 }
 function dropGold(x, y, v){ drops.push({ kind:'gold', v, x, y, z:0, vz:rnd(260, 420), vx:rnd(-80, 80), t:0 }); }
@@ -780,23 +797,25 @@ function useSkill(i){
   if (!self && Math.hypot(tg.x - P.x, tg.y - P.y) > ST.range + 160){ P.target = tg; toast('조금 더 다가가야 해요'); return; }
   P.mp -= S.mp; P.cd[i] = S.cd * (1 - ST.cdr); P.kick = 1; P.swing = 1; if (tg) P.face = tg.x >= P.x ? 1 : -1;
   const id = S.id;
-  if (id === 'bash'){ addFx({ k:'slash', x:tg.x, y:tg.y - 40, life:0.25, big:true, dir:P.face }); hitMob(tg, 2.8); shake = 9; sfx('crit'); }
-  else if (id === 'whirl'){ addFx({ k:'whirl', x:P.x, y:P.y - 30, life:0.4 }); for (const m of mobs) if (!m.dead && Math.hypot(m.x - P.x, m.y - P.y) < 200 + m.r) hitMob(m, 1.8); shake = 10; sfx('swing'); }
+  if (id === 'quake'){ const cx2 = P.x + P.face * 120, cy2 = P.y; addFx({ k:'ring', x:cx2, y:cy2, r0:20, r1:240, life:0.45, c:'255,170,80' }); burst(cx2, cy2, 40, '#c8a070'); for (const m of mobs) if (!m.dead && Math.hypot(m.x - cx2, (m.y - cy2) * 1.3) < 230 + m.r){ hitMob(m, 3); m.stun = 2; } shake = 14; sfx('boom'); }
+  else if (id === 'whirl'){ addFx({ k:'whirl', x:P.x, y:P.y - 30, life:0.4 }); for (const m of mobs) if (!m.dead && Math.hypot(m.x - P.x, m.y - P.y) < 230 + m.r) hitMob(m, 1.9); shake = 10; sfx('swing'); }
   else if (id === 'guard'){ P.buff.guard = 8; P.hp = Math.min(ST.maxHp, P.hp + ST.maxHp * 0.15); addFx({ k:'ring', x:P.x, y:P.y - 50, r0:30, r1:160, life:0.6, c:'255,220,120' }); toast('🛡 수호의 맹세'); sfx('magic'); }
   else if (id === 'fire'){ shoot({ x:P.x + P.face*30, y:P.y - 80, tg, sp:900, kind:'fire', mult:2.3, aoe:140, size:1.5 }); sfx('magic'); }
   else if (id === 'frost'){ addFx({ k:'ring', x:tg.x, y:tg.y - 20, r0:30, r1:190, life:0.5, c:'150,220,255' }); for (let k = 0; k < 24; k++) fx.push({ k:'p', x:tg.x + rnd(-140, 140), y:tg.y + rnd(-90, 40), vx:0, vy:-rnd(40, 120), t:0, life:rnd(0.4, 0.9), c:'#d0f4ff', r:rnd(2, 5) });
-    for (const m of mobs) if (!m.dead && Math.hypot(m.x - tg.x, m.y - tg.y) < 190 + m.r) hitMob(m, 1.7, { slow:3 }); sfx('magic'); }
+    for (const m of mobs) if (!m.dead && Math.hypot(m.x - tg.x, m.y - tg.y) < 250 + m.r) hitMob(m, 1.9, { slow:3 }); sfx('magic'); }
   else if (id === 'bolt'){ let cur = tg, hs = new Set(), from = { x:P.x, y:P.y - 90 };
-    for (let k = 0; k < 5 && cur; k++){ hs.add(cur); const to = { x:cur.x, y:cur.y - 40 }; addFx({ k:'bolt', x:from.x, y:from.y, x2:to.x, y2:to.y, life:0.3 }); hitMob(cur, 2.1); from = to; cur = nearestMob(cur.x, cur.y, 380, m => !hs.has(m)); } shake = 7; sfx('crit'); }
-  else if (id === 'multi'){ for (let k = 0; k < 5; k++) setTimeout(() => { const t2 = tg && !tg.dead ? tg : nearestMob(P.x, P.y, ST.range + 120); if (t2) shoot({ x:P.x + P.face*24, y:P.y - 70, tg:t2, sp:1400, kind:'arrow', mult:0.95 }); sfx('swing'); }, k * 90); }
-  else if (id === 'pierce'){ const a = Math.atan2(tg.y - P.y, tg.x - P.x); shoot({ x:P.x, y:P.y - 70, vx:Math.cos(a)*1600, vy:Math.sin(a)*1600, kind:'pierce', mult:2.6, life:0.6, hs:new Set() }); sfx('magic'); }
+    for (let k = 0; k < 8 && cur; k++){ hs.add(cur); const to = { x:cur.x, y:cur.y - 40 }; addFx({ k:'bolt', x:from.x, y:from.y, x2:to.x, y2:to.y, life:0.3 }); hitMob(cur, 2.2); from = to; cur = nearestMob(cur.x, cur.y, 380, m => !hs.has(m)); } shake = 7; sfx('crit'); }
+  else if (id === 'multi'){ const list = mobs.filter(m => !m.dead && Math.hypot(m.x - P.x, m.y - P.y) < ST.range + 200).sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y)).slice(0, 7);
+    list.forEach((t2, k) => setTimeout(() => { if (!t2.dead) shoot({ x:P.x + P.face*24, y:P.y - 70, tg:t2, sp:1500, kind:'arrow', mult:1.2 }); sfx('swing'); }, k * 40)); }
+  else if (id === 'pierce'){ const tx = tg.x, ty = tg.y; for (let k = 0; k < 26; k++) setTimeout(() => { const ax = tx + rnd(-190, 190), ay = ty + rnd(-110, 110); addFx({ k:'rain', x:ax, y:ay, life:0.25 }); }, k * 25);
+    setTimeout(() => { addFx({ k:'ring', x:tx, y:ty, r0:30, r1:230, life:0.35, c:'170,255,190' }); for (const m of mobs) if (!m.dead && Math.hypot(m.x - tx, (m.y - ty) * 1.2) < 230 + m.r) hitMob(m, 2.6); shake = 8; }, 300); sfx('magic'); }
   else if (id === 'dash'){ P.buff.dash = 6; toast('💨 바람 걸음'); burst(P.x, P.y - 20, 20, '#c8ffd8'); sfx('magic'); }
 }
 function basicAttack(m){
   P.kick = 1; P.swing = 1; P.face = m.x >= P.x ? 1 : -1; const twice = ST.L.twin && Math.random() < 0.25;
   const once = () => {
-    if (P.cls === 'knight'){ addFx({ k:'slash', x:m.x - P.face*8, y:m.y - 40, life:0.18, dir:P.face }); hitMob(m, 1); sfx('swing'); }
-    else if (P.cls === 'wizard') shoot({ x:P.x + P.face*28, y:P.y - 96, tg:m, sp:860, kind:'orb', mult:1, aoe:60 });
+    if (P.cls === 'knight'){ addFx({ k:'slash', x:m.x - P.face*8, y:m.y - 40, life:0.18, dir:P.face }); hitMob(m, 1); for (const o of mobs) if (o !== m && !o.dead && Math.hypot(o.x - m.x, o.y - m.y) < 110) hitMob(o, 0.6); sfx('swing'); }
+    else if (P.cls === 'wizard') shoot({ x:P.x + P.face*28, y:P.y - 96, tg:m, sp:900, kind:'orb', mult:1, aoe:95 });
     else shoot({ x:P.x + P.face*24, y:P.y - 70, tg:m, sp:1400, kind:'arrow', mult:1 });
   };
   once(); if (twice) setTimeout(() => { if (!m.dead) once(); }, 120);
@@ -814,49 +833,54 @@ function update(dt){
   if (P.frenzyT > 0){ P.frenzyT -= dt; if (P.frenzyT <= 0) P.frenzy = 0; }
   // 회복: 성채에서는 빠르게
   const town = MAP.town, rg = town ? 0.15 : 0.01;
-  if (!P.dead){ P.hp = Math.min(ST.maxHp, P.hp + (ST.maxHp * rg + ST.regen) * dt); P.mp = Math.min(ST.maxMp, P.mp + ST.maxMp * (rg + 0.012) * dt); }
+  if (!P.dead){ P.hp = Math.min(ST.maxHp, P.hp + (ST.maxHp * rg + ST.regen) * dt); P.mp = Math.min(ST.maxMp, P.mp + ST.maxMp * (rg + 0.03) * dt); }
   potT -= dt; if (autoOn && !P.dead && potT <= 0){ if (P.hp < ST.maxHp * 0.35 && P.pots.hp > 0){ drink('hp'); potT = 1.5; } else if (P.mp < 14 && P.pots.mp > 0){ drink('mp'); potT = 1.5; } }
 
   if (!P.dead){
-    let goal = holdMove || tapMove || null;
+    const jd = joyDir(); let goal = jd ? { x:P.x + jd.x * 140, y:P.y + jd.y * 140, joy:true } : (tapMove || null);
     // 자동 사냥: 전리품 먼저 줍고, 없으면 가까운 몬스터
-    if (autoOn && !holdMove && !tapMove && !town){
+    if (autoOn && !jd && !tapMove && !town){
       if (!P.target || P.target.dead){ const d = drops.find(d => d.kind === 'item' && !d.full && Math.hypot(d.x - P.x, d.y - P.y) < 700) || drops.find(d => d.kind !== 'item' && Math.hypot(d.x - P.x, d.y - P.y) < 500);
-        if (d && !nearestMob(P.x, P.y, 200)) goal = { x:d.x, y:d.y }; else P.target = nearestMob(P.x, P.y, 1600); } }
+        if (d && !nearestMob(P.x, P.y, 200)) goal = { x:d.x, y:d.y }; else P.target = autoTarget(); } }
     if (P.target && P.target.dead) P.target = null;
-    if (P.target && !holdMove){
+    if (P.target && !jd){
       const m = P.target, d = Math.hypot(m.x - P.x, m.y - P.y);
       if (d > ST.range + m.r * 0.5) goal = { x:m.x, y:m.y };
       else { goal = null; tapMove = null; if (P.atkT <= 0){ basicAttack(m); P.atkT = ST.aspd; } }
       if (autoOn) for (let i = 0; i < 3; i++){ const S = CLASSES[P.cls].skills[i]; if (P.lv >= S.lv && P.cd[i] <= 0 && P.mp >= S.mp && (S.id === 'guard' ? P.hp < ST.maxHp*0.6 : S.id === 'dash' ? false : d < ST.range + 120)){ useSkill(i); break; } }
     }
-    if (goal) goal = steer(goal, dt);
+    if (goal && !goal.joy) goal = steer(goal, dt);
     if (goal){ const dx = goal.x - P.x, dy = goal.y - P.y, d = Math.hypot(dx, dy);
-      if (d > 8){ const s = Math.min(d, ST.spd * dt); moveEnt(P, dx/d*s, dy/d*s, 18); if (Math.abs(dx) > 4) P.face = dx >= 0 ? 1 : -1; P.run = true; } else { if (tapMove) tapMove = null; P.run = false; }
+      if (d > 8){ const s = Math.min(d, ST.spd * dt * (goal.joy ? Math.min(1, Math.hypot(jd.x, jd.y) * 1.2) : 1)); moveEnt(P, dx/d*s, dy/d*s, 18); if (Math.abs(dx) > 4) P.face = dx >= 0 ? 1 : -1; P.run = true; } else { if (tapMove) tapMove = null; P.run = false; }
     } else P.run = false;
     // 출구
-    if (MAP.exit && Math.hypot(MAP.exit.x - P.x, MAP.exit.y - P.y) < 46){ if (town) { if (!P.exitLock){ P.exitLock = true; openGate(); } } else { setAuto(false); enterTown(); return; } } else P.exitLock = false;
+    if (MAP.exit && !(autoOn && !town) && Math.hypot(MAP.exit.x - P.x, MAP.exit.y - P.y) < 46){ if (town) { if (!P.exitLock){ P.exitLock = true; openGate(); } } else { setAuto(false); enterTown(); return; } } else P.exitLock = false;
     // 줍기
     for (let i = drops.length - 1; i >= 0; i--){ const d = drops[i]; if (d.z > 4) continue; const rr = d.kind === 'gold' ? 90 : 70; if (Math.hypot(d.x - P.x, d.y - P.y) < rr && pickDrop(d)) drops.splice(i, 1); }
   }
+  // 무리 다시 등장
+  if (!town && MAP.packT > 0){ MAP.packT -= dt; if (MAP.packT <= 0){ MAP.packT = 0; if (mobs.filter(o => !o.boss).length < MOB_CAP - 6) spawnMob(false, Math.random() < 0.3); if (mobs.filter(o => !o.boss).length < MOB_CAP - 12) MAP.packT = 3; } }
   // 보스
   if (!town && !MAP.bossUp){ MAP.bossT -= dt; if (MAP.bossT <= 0){ spawnMob(true); MAP.bossT = 1e9; } }
   // 몬스터
   for (const m of mobs){
     if (m.dead) continue; m.hit = Math.max(0, m.hit - dt*4); m.slow = Math.max(0, m.slow - dt); m.acd -= dt; m.t -= dt; m.kick = Math.max(0, (m.kick||0) - dt*5);
     const d = Math.hypot(P.x - m.x, P.y - m.y), sp = (m.boss ? 100 : m.fast ? 170 : 115) * (m.slow > 0 ? 0.45 : 1);
-    if (!P.dead && (d < (m.boss ? 460 : 300) || m.aggro)) m.st = 'chase';
+    if (m.stun > 0){ m.stun -= dt; m.run = false; continue; }
+    if (!P.dead && m.st !== 'chase' && (d < (m.boss ? 520 : 420) || m.aggro)){ m.st = 'chase'; for (const o of mobs) if (o.gid === m.gid && o.st !== 'chase'){ o.st = 'chase'; o.aggro = true; } }
     m.run = false;
     if (m.st === 'chase'){
       if (P.dead || Math.hypot(m.x - m.hx, m.y - m.hy) > 1100){ m.st = 'back'; m.aggro = false; }
       else { const ar = m.ranged ? 280 : m.r + 44;
-        if (d > ar){ moveEnt(m, (P.x - m.x)/d*sp*dt, (P.y - m.y)/d*sp*dt, 16); m.face = P.x >= m.x ? 1 : -1; m.run = true; }
+        if (d > ar){ const g2 = mobSteer(m, dt), gd = Math.hypot(g2.x - m.x, g2.y - m.y) || 1; moveEnt(m, (g2.x - m.x)/gd*sp*dt, (g2.y - m.y)/gd*sp*dt, 16); m.face = P.x >= m.x ? 1 : -1; m.run = true; }
         else if (m.acd <= 0){ m.acd = m.boss ? 1.5 : 1.4; m.kick = 1; if (m.ranged) shots.push({ t:0, x:m.x, y:m.y - 60, tg:P, sp:520, kind:'mob', dmg:m.atk }); else playerHurt(m.atk); }
         if (m.boss){ m.slam -= dt; if (m.slam <= 0){ m.slam = 6.5; const tx = P.x, ty = P.y; addFx({ k:'warn', x:tx, y:ty, r:180, life:1.1, cb:() => { if (!P.dead && Math.hypot(P.x - tx, P.y - ty) < 180) playerHurt(m.atk * 2.2); burst(tx, ty, 34, '#ff7a4a'); addFx({ k:'ring', x:tx, y:ty, r0:20, r1:200, life:0.35, c:'255,90,60' }); shake = 14; sfx('boom'); } }); } } }
     } else if (m.st === 'back'){ const hd = Math.hypot(m.hx - m.x, m.hy - m.y); if (hd < 20){ m.st = 'idle'; m.hp = m.max; } else { moveEnt(m, (m.hx - m.x)/hd*sp*1.5*dt, (m.hy - m.y)/hd*sp*1.5*dt, 16); m.run = true; } }
     else { if (m.t <= 0){ m.t = rnd(2, 5); m.wx = m.hx + rnd(-160, 160); m.wy = m.hy + rnd(-160, 160); } if (m.wx != null){ const wd = Math.hypot(m.wx - m.x, m.wy - m.y); if (wd > 10){ moveEnt(m, (m.wx - m.x)/wd*50*dt, (m.wy - m.y)/wd*50*dt, 16); m.face = m.wx >= m.x ? 1 : -1; m.run = true; } } }
   }
   mobs = mobs.filter(m => !m.dead);
+  // 몬스터끼리 너무 겹치지 않게 살짝 밀어냄
+  for (let i = 0; i < mobs.length; i++){ const a = mobs[i]; if (a.st !== 'chase') continue; for (let j = i + 1; j < mobs.length; j++){ const b = mobs[j], dx = b.x - a.x, dy = b.y - a.y, d2 = dx*dx + dy*dy, mn = (a.boss || b.boss) ? 90 : 46; if (d2 > 0.01 && d2 < mn*mn){ const d = Math.sqrt(d2), push = (mn - d) * 0.5; moveEnt(a, -dx/d*push*0.5, -dy/d*push*0.5, 16); moveEnt(b, dx/d*push*0.5, dy/d*push*0.5, 16); } } }
   // 신수
   const pt = P.pet;
   if (pt){ const fx2 = P.x - (P.face||1) * 80, fy = P.y - 10, dd = Math.hypot(fx2 - pet.x, fy - pet.y); if (dd > 6){ const s = Math.min(dd, Math.max(ST.spd * 1.1, dd * 3) * dt); pet.x += (fx2 - pet.x)/dd*s; pet.y += (fy - pet.y)/dd*s; } pet.face = P.face || 1;
@@ -895,6 +919,14 @@ const hexRgb = h => { const v = parseInt(h.slice(1), 16); return ((v >> 16) & 25
 // 길 찾기: 직선으로 못 가면 칸 단위 너비 우선 탐색으로 돌아감
 function clearLine(x0, y0, x1, y1){ const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 24); for (let i = 1; i <= n; i++){ const t = i / n, x = x0 + (x1 - x0)*t, y = y0 + (y1 - y0)*t; if (!walk(x - 16, y) || !walk(x + 16, y)) return false; } return true; }
 let pathC = null, pathGoal = -1, pathT = 0;
+// 몬스터 길 찾기 (벽에 걸리면 돌아서 옴)
+function mobSteer(m, dt){
+  m.pt = (m.pt || 0) - dt;
+  if (m.pt <= 0){ m.pt = 0.7; m.los = clearLine(m.x, m.y, P.x, P.y); m.path = m.los ? null : bfs(Math.floor(m.x / TS), Math.floor(m.y / TS), Math.floor(P.x / TS), Math.floor(P.y / TS)); }
+  if (m.los || !m.path || !m.path.length) return P;
+  while (m.path.length > 1 && Math.hypot(m.path[0].x - m.x, m.path[0].y - m.y) < 30) m.path.shift();
+  return m.path[0];
+}
 function steer(goal, dt){
   pathT -= dt;
   if (clearLine(P.x, P.y, goal.x, goal.y)){ pathC = null; return goal; }
@@ -976,6 +1008,7 @@ function render(dt){
     if (f.k === 'slash'){ cx.globalAlpha = 1 - k; cx.strokeStyle = '#fff6e0'; cx.lineWidth = f.big ? 14 : 8; cx.lineCap = 'round'; const R = f.big ? 90 : 60, a0 = f.dir > 0 ? -1.3 : Math.PI + 1.3, sweep = (f.dir > 0 ? 1 : -1) * 2.2 * Math.min(1, k * 2);
       cx.beginPath(); cx.arc(f.x, f.y, R, a0, a0 + sweep, f.dir < 0); cx.stroke(); cx.strokeStyle = 'rgba(255,190,90,.5)'; cx.lineWidth = (f.big ? 26 : 16); cx.stroke(); continue; }
     if (f.k === 'whirl'){ cx.globalAlpha = 1 - k; cx.strokeStyle = 'rgba(255,230,190,.9)'; cx.lineWidth = 10; for (let j = 0; j < 3; j++){ const a = k * 10 + j * 2.1; cx.beginPath(); cx.ellipse(f.x, f.y, 180, 95, 0, a, a + 1.4); cx.stroke(); } continue; }
+    if (f.k === 'rain'){ const k2 = Math.min(1, k * 1.4), y0 = f.y - 260 * (1 - k2); cx.globalAlpha = 1 - k; cx.strokeStyle = '#e8ffe0'; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(f.x + 30*(1-k2), y0 - 40); cx.lineTo(f.x, y0); cx.stroke(); continue; }
     if (f.k === 'meteor'){ const y0 = f.y - 700 * (1 - k), x0 = f.x + 300 * (1 - k); const g = cx.createRadialGradient(x0, y0, 2, x0, y0, 50); g.addColorStop(0, '#fff6c0'); g.addColorStop(0.4, '#ff8a2a'); g.addColorStop(1, 'rgba(255,60,0,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(x0, y0, 50, 0, Math.PI*2); cx.fill(); cx.strokeStyle = 'rgba(255,120,40,.5)'; cx.lineWidth = 20; cx.beginPath(); cx.moveTo(x0, y0); cx.lineTo(x0 + 120, y0 - 260); cx.stroke(); continue; }
   }
   cx.restore(); cx.globalAlpha = 1;
@@ -991,6 +1024,7 @@ function render(dt){
   if (tapMove && !P.target){ cx.strokeStyle = 'rgba(255,220,160,.7)'; cx.lineWidth = 3; const r = 16 + Math.sin(T*8)*4; cx.beginPath(); cx.ellipse(tapMove.x, tapMove.y, r, r*0.45, 0, 0, Math.PI*2); cx.stroke(); }
   cx.restore();
   if (P.dead){ cx.fillStyle = 'rgba(80,0,0,.35)'; cx.fillRect(0, 0, W, H); }
+  drawJoy();
 }
 function drawLight(sx, sy){
   const s = 0.25, lw = W * s, lh = H * s; if (LC.width !== lw){ LC.width = lw; LC.height = lh; }
@@ -1018,6 +1052,7 @@ function drawMob(m){
   if (m.boss || m.elite){ cx.save(); cx.globalCompositeOperation = 'lighter'; const g = cx.createRadialGradient(m.x, m.y - 40, 5, m.x, m.y - 40, m.boss ? 160 : 70); g.addColorStop(0, m.boss ? 'rgba(200,30,60,.35)' : 'rgba(80,140,255,.3)'); g.addColorStop(1, 'rgba(0,0,0,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(m.x, m.y - 40, m.boss ? 160 : 70, 0, Math.PI*2); cx.fill(); cx.restore(); }
   const fr = frameOf(m.k, m.run ? 'run' : 'idle', T + m.hx * 0.01), kx = (m.kick || 0) * m.face * 14;
   spr(fr, m.x + kx, m.y, { s:m.s, flip: m.face < 0, flash: m.hit * 0.8, fc: m.slow > 0 ? '#8ad0ff' : '#fff' });
+  if (m.stun > 0) label('★', m.x + Math.sin(T*8)*10, m.y - mobH(m) - 20, '#ffe060', 22);
   if (P.target === m){ cx.strokeStyle = 'rgba(255,70,70,.9)'; cx.lineWidth = 3; cx.setLineDash([10, 8]); cx.lineDashOffset = -T*40; cx.beginPath(); cx.ellipse(m.x, m.y, m.r*1.5, m.r*0.55, 0, 0, Math.PI*2); cx.stroke(); cx.setLineDash([]); }
 }
 function drawMobBar(m){
@@ -1059,9 +1094,12 @@ function drawPlayer(){
   if (P.buff.dash > 0 && P.run) for (let k = 1; k <= 3; k++) spr(fr, P.x - face*k*22, P.y, { flip: face < 0, a:0.15 });
   // 무기 (뒤)
   const wp = P.eq.weapon, wIcon = wp && !wp.unid ? wp.icon : null, swingA = (P.swing || 0);
-  const drawW = () => { if (!wIcon) return; const hx = P.x + kx + face * 22, hy = P.y - 44;
-    if (wIcon[0] === 'd'){ const ang = P.cls === 'knight' ? face * (0.5 - swingA * 2.4) : P.cls === 'wizard' ? face * 0.15 : 0; spr(wIcon.slice(2), hx, hy, { s:4, rot: ang, cy: (ATL.f[wIcon.slice(2)] || [0,0,0,16])[3] * 4 * 0.85 }); }
-    else { const c = itemIconCanvas(wp); cx.save(); cx.translate(hx, hy - 10); cx.rotate(face * (P.cls === 'knight' ? 0.5 - swingA * 2.4 : 0.2)); cx.drawImage(c, -20, -36, 40, 40); cx.restore(); } };
+  // 무기: 손 위치(몸 앞쪽 허리 높이)에 쥔 모습. 기사는 휘두를 때 크게 회전
+  const drawW = () => { if (!wIcon) return; const bob = P.run ? Math.abs(Math.sin(T*16)) * 3 : 0, hx = P.x + kx + face * 16, hy = P.y - 34 - bob;
+    if (wIcon[0] === 'd'){ const f = ATL.f[wIcon.slice(2)] || [0,0,8,16], ws = P.cls === 'wizard' ? 3 : 2.6;
+      const ang = P.cls === 'knight' ? face * (0.45 - swingA * 2.6 + (swingA > 0.5 ? 0 : 0)) : P.cls === 'wizard' ? face * (0.12 - swingA * 0.5) : face * 0.0;
+      spr(wIcon.slice(2), hx, hy, { s:ws, rot: ang, flip: face < 0, cy: f[3] * ws * (P.cls === 'ranger' ? 0.5 : 0.88) }); }
+    else { const c = itemIconCanvas(wp); cx.save(); cx.translate(hx, hy); cx.rotate(face * (P.cls === 'knight' ? 0.45 - swingA * 2.6 : 0.1)); if (face < 0) cx.scale(-1, 1); cx.drawImage(c, -16, -40, 34, 34); cx.restore(); } };
   if (face < 0) drawW();
   spr(fr, P.x + kx, P.y, { flip: face < 0, flash: P.hurt * 0.6, fc:'#ff3a3a', a: P.dead ? 0.5 : 1 });
   if (face >= 0) drawW();
@@ -1101,11 +1139,19 @@ cv.addEventListener('pointerdown', e => {
   let hit = null, hd = 1e9; for (const m of mobs){ const d = Math.hypot(m.x - p.x, (m.y - 40) - p.y); if (d < (m.boss ? 140 : 70) && d < hd){ hd = d; hit = m; } }
   if (hit){ P.target = hit; tapMove = null; holdMove = null; return; }
   if (MAP.town) for (const n of NPCS) if (Math.hypot(n.c*TS - p.x, n.r*TS - 60 - p.y) < 80){ tapMove = { x:n.c*TS, y:n.r*TS + 60 }; P.target = null; pendingNpc = n; return; }
-  P.target = null; tapMove = p; holdMove = p; pendingNpc = null; cv.setPointerCapture(e.pointerId);
+  // 빈 땅: 짧게 누르면 그곳으로 이동, 끌면 그 자리에 조이스틱이 생김
+  joy = { id:e.pointerId, sx:e.clientX, sy:e.clientY, x:e.clientX, y:e.clientY, on:false, p }; cv.setPointerCapture(e.pointerId);
 });
-cv.addEventListener('pointermove', e => { if (holdMove && performance.now() - downAt > 110) holdMove = lp(e); });
-const up = () => { if (holdMove){ tapMove = holdMove; holdMove = null; } };
+let joy = null;
+cv.addEventListener('pointermove', e => { if (!joy || e.pointerId !== joy.id) return; joy.x = e.clientX; joy.y = e.clientY;
+  const r = cv.getBoundingClientRect(), d = Math.hypot(joy.x - joy.sx, joy.y - joy.sy) / r.width * W;
+  if (!joy.on && d > 22){ joy.on = true; P.target = null; tapMove = null; pendingNpc = null; } });
+const up = e => { if (!joy || (e && e.pointerId !== joy.id)) return; if (!joy.on){ P.target = null; tapMove = joy.p; pendingNpc = null; } joy = null; };
 cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+function joyDir(){ if (!joy || !joy.on) return null; const r = cv.getBoundingClientRect(), dx = (joy.x - joy.sx) / r.width * W, dy = (joy.y - joy.sy) / r.height * H, d = Math.hypot(dx, dy); if (d < 8) return null; const k = Math.min(1, d / 90); return { x: dx / d * k, y: dy / d * k }; }
+function drawJoy(){ if (!joy || !joy.on) return; const r = cv.getBoundingClientRect(), bx = (joy.sx - r.left) / r.width * W, by = (joy.sy - r.top) / r.height * H; let kx = (joy.x - r.left) / r.width * W - bx, ky = (joy.y - r.top) / r.height * H - by; const d = Math.hypot(kx, ky); if (d > 90){ kx = kx / d * 90; ky = ky / d * 90; }
+  cx.save(); cx.globalAlpha = 0.55; cx.fillStyle = 'rgba(20,12,6,.6)'; cx.strokeStyle = '#c8963a'; cx.lineWidth = 4; cx.beginPath(); cx.arc(bx, by, 95, 0, Math.PI*2); cx.fill(); cx.stroke();
+  cx.globalAlpha = 0.85; const g = cx.createRadialGradient(bx + kx - 10, by + ky - 10, 4, bx + kx, by + ky, 44); g.addColorStop(0, '#ffe0a0'); g.addColorStop(1, '#8a5a1a'); cx.fillStyle = g; cx.beginPath(); cx.arc(bx + kx, by + ky, 42, 0, Math.PI*2); cx.fill(); cx.restore(); }
 document.addEventListener('gesturestart', e => e.preventDefault());
 $('bAtk').onclick = () => { if (!P || P.dead) return; const m = nearestMob(P.x, P.y, 800); if (m){ P.target = m; tapMove = null; } else toast('주변에 적이 없어요'); };
 [0,1,2].forEach(i => $('sk' + i).onclick = () => useSkill(i));
@@ -1146,7 +1192,7 @@ function hud(dt){
   $('talkB').classList.toggle('on', !!nearNpc); if (nearNpc) $('talkB').textContent = '💬 ' + nearNpc.n;
   const ph = $('petHud'); ph.classList.toggle('on', !!P.pet); if (P.pet){ const pt = P.pet; $('petN').textContent = pt.hatched ? '🐉 Lv.' + pt.lv : '🥚 ' + Math.floor((pt.heat || 0) / 60 * 100) + '%'; ph.querySelector('i').style.width = (pt.hatched ? pt.xp / petXpNeed(pt.lv) : (pt.heat || 0) / 60) * 100 + '%'; }
   $('mPet').firstChild.textContent = P.pet && P.pet.hatched ? '🐉' : '🥚';
-  drawMini();
+  trackQuest(); drawMini();
 }
 
 // =================== 창 공통 ===================
@@ -1402,14 +1448,42 @@ function openQuest(atNpc){
   if (!last){ h += '<div class="row"><div class="tx">🎁 보상<small>' + rewardTxt(q.r) + '</small></div></div>';
     if (P.q.acc) h += '<div class="note" style="color:#ffd88a;font-size:3.2cqw">진행: ' + qProg() + '</div>';
     if (atNpc){ if (!P.q.acc) h += '<button class="btn gold big" id="qA">✔ 수락</button>'; else if (qDone()) h += '<button class="btn gold big" id="qD">🎁 보상 받기</button>'; }
-    else if (!P.q.acc) h += '<div class="note">성채의 수호천사 세라(!)에게 말을 걸어 수락하세요</div>';
-    else if (qDone()) h += '<div class="note up">완료! 수호천사 세라에게 돌아가세요</div>'; }
+    else h += '<button class="btn gold big" id="qGo">▶ 바로가기 (자동 진행)</button>'; }
   h += '<div class="note" style="text-align:center;margin-top:3cqw">이야기 ' + Math.min(P.q.i + 1, QUESTS.length) + ' / ' + QUESTS.length + '</div>';
   modal('📜 ' + (atNpc ? '수호천사 세라' : '퀘스트'), h); drawNpcs();
-  if ($('qA')) $('qA').onclick = () => { P.q.acc = true; P.q.c = 0; P.q.done = false; toast('📜 [' + q.t + '] 수락'); sfx('pick'); save(); openQuest(true); };
+  if ($('qGo')) $('qGo').onclick = autoQuest;
+  if ($('qA')) $('qA').onclick = () => { P.q.acc = true; P.q.c = 0; P.q.done = false; toast('📜 [' + q.t + '] 수락'); sfx('pick'); save(); if (q.type !== 'none') autoQuest(); };
   if ($('qD')) $('qD').onclick = () => { const r = q.r; gainXp(r.xp || 0); P.gold += r.gold || 0; P.pots.hp += r.hp || 0; P.scrolls = (P.scrolls || 0) + (r.scroll || 0); P.food = (P.food || 0) + (r.food || 0);
     if (r.item){ const it = mkItem(pick(SLOTS), P.cls, Math.max(P.lv, 3), r.item); P.bag.push(it); }
     banner('퀘스트 완료', q.t); sfx('lvl'); burst(P.x, P.y - 80, 30, '#ffd88a'); P.q = { i:P.q.i + 1, c:0, done:false, acc:false }; save(); openQuest(true); };
+}
+
+// 퀘스트 바로가기: 누르면 할 일로 자동 이동
+let questMob = null, questBossOn = false;
+function bestZone(){ let z = 0; ZONES.forEach((Z, i) => { if (P.lv >= Z.lv[0] - 1) z = i; }); return z; }
+function autoQuest(){
+  closeModal(); if (P.dead) return; const q = Q();
+  const goNpc = id => { const n = NPCS.find(x => x.id === id); if (!MAP.town){ setAuto(false); enterTown(); } P.target = null; tapMove = { x:n.c*TS, y:n.r*TS + 60 }; pendingNpc = n; toast('📜 ' + n.n + '에게 가는 중…'); };
+  const hunt = (z, msg) => { if (MAP.town || P.where !== z) enterZone(z); setAuto(true); toast('📜 ' + msg); };
+  questMob = null; questBossOn = false;
+  if (P.q.i >= QUESTS.length - 1){ toast('다음 이야기를 기다려 주세요'); return; }
+  if (!P.q.acc || qDone()) return goNpc('quest');
+  if (q.type === 'kill'){ const z = Math.max(0, ZONES.findIndex(Z => Z.mobs.some(m => m.n === q.mob))); questMob = q.mob; hunt(z, q.mob + '을(를) 찾아 사냥 중'); }
+  else if (q.type === 'ident'){ if (P.bag.some(i => i.unid)) goNpc('appr'); else hunt(bestZone(), '미확인 장비를 얻을 때까지 사냥 중'); }
+  else if (q.type === 'egg') goNpc('pet');
+  else if (q.type === 'boss'){ questBossOn = true; hunt(q.zone - 1, ZONES[q.zone-1].boss.n + '을(를) 기다리며 사냥 중'); }
+  else hunt(bestZone(), '신수와 함께 사냥 중');
+}
+$('qTrack').onclick = autoQuest;
+function autoTarget(){
+  const boss = mobs.find(m => m.boss); if (boss && (questBossOn || P.lv >= boss.lv - 3)) return boss;
+  if (questMob){ const t = nearestMob(P.x, P.y, 2000, m => m.n.replace('정예 ', '') === questMob); if (t) return t; }
+  return nearestMob(P.x, P.y, 1600);
+}
+function trackQuest(){
+  const el = $('qTrack'); if (!P || P.q.i >= QUESTS.length - 1){ el.classList.remove('on'); return; }
+  const q = Q(), done = P.q.acc && qDone(), h = '📜 <b>' + esc(q.t) + '</b><br>' + (!P.q.acc ? '수호천사 세라에게 받기' : done ? '완료! 보상 받으러 가기' : qProg()) + '<i>▶ 바로가기</i>';
+  if (el.dataset.h !== h){ el.dataset.h = h; el.innerHTML = h; } el.classList.add('on'); el.classList.toggle('done', done || !P.q.acc);
 }
 
 // =================== 방치 보상 (자리 비운 동안) ===================
